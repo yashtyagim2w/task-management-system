@@ -1,5 +1,6 @@
 <?php
 
+use App\Controllers\AuthController;
 use App\Core\Router;
 use App\Helpers\Session;
 
@@ -11,11 +12,12 @@ $router = new Router();
 
 $routes = [
     'GET' => [
-
+        '/login' => [AuthController::class, 'renderLoginForm'],
     ],
-
+    
     'POST' => [
-
+        '/login' => [AuthController::class, 'login'],
+        '/logout' => [AuthController::class, 'logout'],
     ],
 
     'PATCH' => [

@@ -8,7 +8,7 @@ class Redirect {
         exit;
     }
 
-    public static function redirectWithMessage(string $path, string $key, string $message){
+    public static function redirectWithMessage(string $path, string $key, array $message){
         if (!empty($key) && !empty($message)) {
             Session::set($key, $message);
         }

@@ -29,5 +29,9 @@ class Session {
     public static function destroy(): void {
         session_destroy();
     }
+
+    public static function regenerate(): void {
+        session_regenerate_id(true);
+    }
     
 }

@@ -41,13 +41,13 @@ class AuthService extends Service {
     }
 
     public function refreshUserSession(int $userId): array {
-        $user = $this->usersModel->getUserDetailsById($userId);
+        $user = $this->usersModel->getUserDetailsById($userId)[0];
 
         if (!$user) {
             return $this->failure("User not found");
         }
-
-        if(!$user['isActive']) {
+        
+        if(!$user['is_active']) {
             return $this->failure("User account is inactive. Please contact support.");
         }
 

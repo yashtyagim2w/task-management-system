@@ -42,4 +42,8 @@ abstract class Model {
         return $stmt->execute();
     }
 
+    // sanitize input to prevent SQL injection
+    public function getSanitizedInput(string $input): string {
+        return $this->db->real_escape_string($input);
+    }
 }

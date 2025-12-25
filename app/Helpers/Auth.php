@@ -35,4 +35,10 @@ class Auth {
         return Session::has('userId');
     }
 
+    public static function adminOnly(): void {
+        if(Session::get('roleName') !== 'super_admin') {
+            Redirect::to('/unauthorized');
+        }
+    }
+
 }

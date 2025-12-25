@@ -1,6 +1,9 @@
 <?php
 
+use App\Controllers\Admin\AdminDashboardController;
+use App\Controllers\Admin\AdminUserController;
 use App\Controllers\AuthController;
+use App\Controllers\ErrorController;
 use App\Controllers\HomeController;
 use App\Core\Router;
 use App\Helpers\Session;
@@ -15,14 +18,21 @@ $routes = [
     'GET' => [
         '/' => [HomeController::class, 'index'],
         '/login' => [AuthController::class, 'renderLoginForm'],
+        '/unauthorized' => [ErrorController::class, 'unauthorized'],
 
-        // Todo 
-        // // Admin Routes
-        // '/admin/dashboard' => [AdminController::class, 'adminDashboard'],
+        // Admin Routes
 
+        // dasboard
+        '/admin/dashboard' => [AdminDashboardController::class, 'renderDashboard'],
+
+        // user management
+        '/admin/users' => [AdminUserController::class, 'renderAllUsers'],
+        '/api/admin/users' => [AdminUserController::class, 'getUsersPaginated'],
+        
+        // todo
         // // Manager Routes
         // '/manager/dashboard' => [ManagerController::class, 'managerDashboard'],
-
+        
         // // Employee Routes
         // '/employee/dashboard' => [EmployeeController::class, 'employeeDashboard'],
     ],
@@ -30,6 +40,11 @@ $routes = [
     'POST' => [
         '/login' => [AuthController::class, 'login'],
         '/logout' => [AuthController::class, 'logout'],
+        
+        // Admin Routes
+        
+        // user management
+        '/admin/user/create' => [AdminUserController::class, 'createNewUser'],
     ],
 
     'PATCH' => [

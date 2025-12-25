@@ -18,4 +18,13 @@ class ErrorController extends Controller {
         $this->render("/404", $data);
     }
 
+    public function unauthorized(): void {
+        Auth::requireLogin();
+
+        $data = [
+            "header_title" => "Unauthorized Access"
+        ];
+        $this->render("/unauthorized", $data);
+    }
+
 }

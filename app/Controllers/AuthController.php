@@ -17,6 +17,7 @@ class AuthController extends Controller {
         $sessionFlashMessageKey = 'login_form';
         $data = [
             'header_title' => 'Login - Task Management System',
+            'public_page' => true,
         ];
 
         if(Session::has($sessionFlashMessageKey)) {
@@ -77,8 +78,8 @@ class AuthController extends Controller {
 
             // regenerate session id to prevent session fixation
             Session::regenerate();
-
-            Redirect::to('/');
+            $redirectRole = $userData['roleName'] === 'super_admin' ? 'admin' : $userData['roleName'];
+            Redirect::to("/{$redirectRole}/dashboard");
 
         } catch (Throwable $e) {
             Logger::error($e);

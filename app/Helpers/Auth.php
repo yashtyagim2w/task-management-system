@@ -26,8 +26,13 @@ class Auth {
     
     public static function redirectIfLoggedIn(): void {
         if(Session::has('userId')) {
-            Redirect::to('/dashboard');
+            $role = Session::get('roleName') === 'super_admin' ? 'admin' : Session::get('roleName');
+            Redirect::to("/{$role}/dashboard");
         }
+    }
+
+    public static function isLoggedIn(): bool {
+        return Session::has('userId');
     }
 
 }

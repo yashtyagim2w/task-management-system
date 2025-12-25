@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\AuthController;
+use App\Controllers\HomeController;
 use App\Core\Router;
 use App\Helpers\Session;
 
@@ -12,7 +13,18 @@ $router = new Router();
 
 $routes = [
     'GET' => [
+        '/' => [HomeController::class, 'index'],
         '/login' => [AuthController::class, 'renderLoginForm'],
+
+        // Todo 
+        // // Admin Routes
+        // '/admin/dashboard' => [AdminController::class, 'adminDashboard'],
+
+        // // Manager Routes
+        // '/manager/dashboard' => [ManagerController::class, 'managerDashboard'],
+
+        // // Employee Routes
+        // '/employee/dashboard' => [EmployeeController::class, 'employeeDashboard'],
     ],
     
     'POST' => [

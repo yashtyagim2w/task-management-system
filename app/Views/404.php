@@ -1,4 +1,4 @@
-<div class="container vh-100 d-flex align-items-center justify-content-center">
+<main class="d-flex flex-fill align-items-center justify-content-center">
     <div class="text-center">
 
         <h1 class="display-1 fw-bold text-danger">404</h1>
@@ -14,4 +14,4 @@
         </a>
 
     </div>
-</div>
+</main> 

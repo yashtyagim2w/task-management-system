@@ -1,4 +1,4 @@
-<section class="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+<main class="d-flex flex-fill align-items-center justify-content-center bg-light">
     <div class="card shadow-sm border-0 w-100 mw-400">
         <div class="card-body p-4">
 
@@ -38,7 +38,7 @@
 
         </div>
     </div>
-</section>
+</main>
 
 <script>
     const flashMsessage = <?= json_encode($flash_message ?? null) ?>;

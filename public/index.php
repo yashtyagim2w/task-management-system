@@ -48,7 +48,10 @@ $routes = [
     ],
 
     'PATCH' => [
+        // admin 
 
+        // user management
+        '/api/admin/user' => [AdminUserController::class, 'updateUserDetails'],
     ],
 ];
 

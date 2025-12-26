@@ -15,3 +15,6 @@ define('HTTP_FORBIDDEN', 403);
 define('HTTP_NOT_FOUND', 404);
 define('HTTP_METHOD_NOT_ALLOWED', 405);
 define('HTTP_INTERNAL_SERVER_ERROR', 500);  
+
+// email settings
+define('EMAIL_REGEXP', '/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/');

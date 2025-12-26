@@ -194,6 +194,130 @@
     </div>
 </div>
 
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <form id="editUserForm">
+                <input type="hidden" id="edit_user_id">
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">First Name *</label>
+                        <input 
+                            type="text" 
+                            id="edit_first_name" 
+                            class="form-control" 
+                            minlength="2" 
+                            maxlength="128" 
+                            pattern="[A-Za-z]+" 
+                            title="Only alphabets allowed"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Last Name</label>
+                        <input 
+                            type="text" 
+                            id="edit_last_name" 
+                            class="form-control"
+                            minlength="2" 
+                            maxlength="128" 
+                            pattern="[A-Za-z]+" 
+                            title="Only alphabets allowed"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input 
+                            type="email" 
+                            id="edit_email" 
+                            class="form-control" 
+                            maxlength="128"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone *</label>
+                        <input 
+                            type="text" 
+                            id="edit_phone" 
+                            class="form-control" 
+                            pattern="\d{10}" 
+                            title="Only numbers are allowed." 
+                            minlength="10"
+                            maxlength="10"
+                            required
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input 
+                            type="text" 
+                            id="edit_password" 
+                            class="form-control"  
+                            minlength="6"
+                            maxlength="32"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Role *</label>
+                        <select id="edit_role_id" class="form-select" required>
+                            <?php foreach ($roles as $role) { ?>
+                                <option value="<?= $role['id'] ?>">
+                                    <?= $role['name'] ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Status *</label>
+                        <select id="edit_is_active" class="form-select" required>
+                            <?php foreach ($activeStatus as $status) { ?>
+                                <option value="<?= $status['id'] ?>">
+                                    <?= $status['name'] ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button 
+                        type="button" 
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >   
+                        Cancel
+                    </button>
+                    
+                    <button 
+                        type="submit" 
+                        class="btn btn-primary" 
+                        id="updateBtn"
+                    >
+                        Update
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import initializeListPage from "/assets/js/list.js";
     import renderUsersRow from "/assets/js/users-render.js";
@@ -262,6 +386,79 @@
         } finally {
             saveBtn.disabled = false;
             saveBtn.innerText = 'Save';
+        }
+    });
+
+    // Edit User Modal Elements
+    document.addEventListener("click", e => {
+        const btn = e.target.closest(".edit-user-btn");
+        if (!btn) return;
+
+        const user = JSON.parse(btn.dataset.user);
+        console.log(user);
+        edit_user_id.value = user.id;
+        edit_first_name.value = user.first_name;
+        edit_last_name.value = user.last_name ?? "";
+        edit_email.value = user.email;
+        edit_phone.value = user.phone_number;
+        edit_password.value = '';
+        edit_role_id.value = Number(user.role_id);
+        edit_is_active.value = user.is_active ? 1 : 0;
+
+        new bootstrap.Modal(editUserModal).show();
+    });
+
+    // Handle Edit User Form Submission
+    document.getElementById('editUserForm').addEventListener("submit", async e => {
+        e.preventDefault();
+
+        const payload = {
+            user_id: Number(edit_user_id.value),
+            first_name: edit_first_name.value.trim(),
+            last_name: edit_last_name.value.trim(),
+            email: edit_email.value.trim(),
+            phone: edit_phone.value.trim(),
+            password: edit_password.value,
+            role_id: Number(edit_role_id.value),
+            is_active: Number(edit_is_active.value)
+        };
+
+        updateBtn.disabled = true;
+        updateBtn.innerText = "Updating...";
+
+        try {
+            const res = await fetch(`/api/admin/user`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await res.json();
+
+            if (!res.ok || !result.success) {
+                Swal.fire("Error", result.message || "Update failed", "error");
+                return;
+            }
+
+            Swal.fire({
+                icon: "success",
+                title: "Updated",
+                text: result.message || "User updated",
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            bootstrap.Modal.getInstance(editUserModal).hide();
+            userList.reloadCurrentPage();
+
+        } catch {
+            Swal.fire("Network Error", "Please try again", "error");
+        } finally {
+            updateBtn.disabled = false;
+            updateBtn.innerText = "Update";
         }
     });
 </script>

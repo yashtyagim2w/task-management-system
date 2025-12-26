@@ -13,6 +13,7 @@ class Users extends Model {
             u.first_name,   
             u.last_name,
             u.email,
+            u.phone_number,
             u.password,
             u.role_id,
             u.is_active,
@@ -33,6 +34,7 @@ class Users extends Model {
             u.first_name,
             u.last_name,
             u.email,
+            u.phone_number,
             u.password,
             u.role_id,
             u.is_active,
@@ -87,27 +89,34 @@ class Users extends Model {
         }
 
         $ORDER = "ORDER BY " . $sortColumn;
-
+        $JOIN = "JOIN roles r ON u.role_id = r.id";
+        $mainAlias = "u";
         $sql = "SELECT
             u.id,
             u.first_name,
             u.last_name,
             u.email,
             u.phone_number,
+            r.id AS role_id,
             r.name AS role_name,
             u.is_active,
             u.created_at
-        FROM {$this->tableName} u
-        JOIN roles r ON u.role_id = r.id
+        FROM {$this->tableName} {$mainAlias}
+        {$JOIN}
         {$WHERE}
         {$ORDER}
         LIMIT ? OFFSET ?
         ;";
-
+        error_log("here: " . print_r($sql, true));
         $types = "ii";
         $params = [$limit, $offset];
-    
-        return $this->rawQuery($sql, $types, $params);
-
+        
+        $data = $this->rawQuery($sql, $types, $params);
+        $totalCount = $this->getCountWithWhereClause($mainAlias, $WHERE, $JOIN);
+        return [
+            "data" => $data,
+            "total_count" => $totalCount
+        ];
     }
+
 }

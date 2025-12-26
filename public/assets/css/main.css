@@ -117,3 +117,32 @@ main {
     justify-content: space-between;
     align-self: center;   
 }
+
+.pagination-container {
+    display: flex;
+    gap: 4px;
+    justify-content: end;
+    margin-top: 20px;
+}
+
+.pagination-btn {
+    padding: 6px 12px;
+    border: 1px solid #2c3e50;
+    background-color: white;
+    color: #2c3e50;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.pagination-btn.active {
+    font-weight: bold;
+    background-color: #2c3e50;
+    color: white;
+}
+
+.pagination-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}

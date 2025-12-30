@@ -72,6 +72,8 @@
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Role</th>
+                    <th>Manager Name</th>
+                    <th>Manager Email</th>
                     <th>Active Status</th>
                     <th>Created At</th>
                     <th>Actions</th>
@@ -165,11 +167,19 @@
 
                     <div class="mb-3">
                         <label class="form-label">Role *</label>
-                        <select name="role_id" class="form-select" required>
+                        <select name="role_id" id="create_role_id" class="form-select" required>
                             <option value="" disabled selected>Select Role</option>
                             <?php foreach($roles as $role) { ?>
                                 <option value="<?= $role['id'] ?>"><?= $role['name'] ?></option>
                             <?php } ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="create_manager_field" style="display: none;">
+                        <label class="form-label">Manager *</label>
+                        <select name="manager_id" id="create_manager_id" class="form-select">
+                            <option value="">Select Manager</option>
+                            <!-- Managers will be loaded dynamically -->
                         </select>
                     </div>
 
@@ -282,6 +292,14 @@
                         </select>
                     </div>
 
+                    <div class="mb-3" id="edit_manager_field" style="display: none;">
+                        <label class="form-label">Manager *</label>
+                        <select id="edit_manager_id" class="form-select">
+                            <option value="">Select Manager</option>
+                            <!-- Managers will be loaded dynamically -->
+                        </select>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label">Status *</label>
                         <select id="edit_is_active" class="form-select" required>
@@ -318,147 +336,4 @@
     </div>
 </div>
 
-<script type="module">
-    import initializeListPage from "/assets/js/list.js";
-    import renderUsersRow from "/assets/js/users-render.js";
-
-    // Initialize List Page
-    const userList = initializeListPage({
-        apiEndpoint: "/api/admin/users",
-        renderRow: renderUsersRow,
-        columnCount: 9,
-    });
-
-    document.getElementById('createUserForm').addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const form = this;
-        const saveBtn = document.getElementById('saveBtn');
-        const formData = new FormData(form);
-
-        saveBtn.disabled = true;
-        saveBtn.innerText = 'Saving...';
-
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            const result = await response.json();
-
-            if (!response.ok || result.success === false) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: result.message || 'Something went wrong'
-                });
-
-                saveBtn.disabled = false;
-                saveBtn.innerText = 'Save';
-                return;
-            }
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Success',
-                text: result.message || 'User created successfully',
-                timer: 1500,
-                showConfirmButton: false
-            });
-
-            form.reset();
-
-            const modalEl = document.getElementById('createUserModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
-            userList.reloadCurrentPage();
-
-        } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Network Error',
-                text: 'Please try again'
-            });
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerText = 'Save';
-        }
-    });
-
-    // Edit User Modal Elements
-    document.addEventListener("click", e => {
-        const btn = e.target.closest(".edit-user-btn");
-        if (!btn) return;
-
-        const user = JSON.parse(btn.dataset.user);
-        console.log(user);
-        edit_user_id.value = user.id;
-        edit_first_name.value = user.first_name;
-        edit_last_name.value = user.last_name ?? "";
-        edit_email.value = user.email;
-        edit_phone.value = user.phone_number;
-        edit_password.value = '';
-        edit_role_id.value = Number(user.role_id);
-        edit_is_active.value = user.is_active ? 1 : 0;
-
-        new bootstrap.Modal(editUserModal).show();
-    });
-
-    // Handle Edit User Form Submission
-    document.getElementById('editUserForm').addEventListener("submit", async e => {
-        e.preventDefault();
-
-        const payload = {
-            user_id: Number(edit_user_id.value),
-            first_name: edit_first_name.value.trim(),
-            last_name: edit_last_name.value.trim(),
-            email: edit_email.value.trim(),
-            phone: edit_phone.value.trim(),
-            password: edit_password.value,
-            role_id: Number(edit_role_id.value),
-            is_active: Number(edit_is_active.value)
-        };
-
-        updateBtn.disabled = true;
-        updateBtn.innerText = "Updating...";
-
-        try {
-            const res = await fetch(`/api/admin/user`, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await res.json();
-
-            if (!res.ok || !result.success) {
-                Swal.fire("Error", result.message || "Update failed", "error");
-                return;
-            }
-
-            Swal.fire({
-                icon: "success",
-                title: "Updated",
-                text: result.message || "User updated",
-                timer: 1500,
-                showConfirmButton: false
-            });
-
-            bootstrap.Modal.getInstance(editUserModal).hide();
-            userList.reloadCurrentPage();
-
-        } catch {
-            Swal.fire("Network Error", "Please try again", "error");
-        } finally {
-            updateBtn.disabled = false;
-            updateBtn.innerText = "Update";
-        }
-    });
-</script>
+<script type="module" src="/assets/js/admin/users.js"></script>

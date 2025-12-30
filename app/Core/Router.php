@@ -20,17 +20,21 @@ class Router {
         $this->routes['PATCH'][$path] = $handler;
     }
 
+    public function delete(string $path, callable|array $handler): void {
+        $this->routes['DELETE'][$path] = $handler;
+    }
+
     public function dispatch(): void {
         // GET, POST -> method
         $method = $_SERVER['REQUEST_METHOD'];
-        
+
         // path
         $uri = strtok($_SERVER['REQUEST_URI'], '?');
 
-        if(isset($this->routes[$method][$uri])){
+        if (isset($this->routes[$method][$uri])) {
             $handler = $this->routes[$method][$uri];
-            
-            if(is_array($handler)){
+
+            if (is_array($handler)) {
                 [$class, $method] = $handler;
                 $controller = new $class;
                 $controller->$method();
@@ -45,5 +49,4 @@ class Router {
         $ErrorController = new ErrorController();
         $ErrorController->notFound();
     }
-
 }

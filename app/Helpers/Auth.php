@@ -41,4 +41,23 @@ class Auth {
         }
     }
 
+    public static function managerOnly(): void {
+        if(Session::get('roleName') !== 'manager') {
+            Redirect::to('/unauthorized');
+        }
+    }
+
+    public static function employeeOnly(): void {
+        if(Session::get('roleName') !== 'employee') {
+            Redirect::to('/unauthorized');
+        }
+    }
+
+    public static function managerOrAdminOnly(): void {
+        $role = Session::get('roleName');
+        if($role !== 'super_admin' && $role !== 'manager') {
+            Redirect::to('/unauthorized');
+        }
+    }
+
 }

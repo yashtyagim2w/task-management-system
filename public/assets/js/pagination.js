@@ -1,8 +1,5 @@
 export function renderPagination(pagination, container, onPageChange) {
-
-    console.log('Rendering pagination:', pagination);
-    console.log('Container:', container);
-    console.log('onPageChange function:', onPageChange);
+    
     const { page, totalPages } = pagination;
     container.innerHTML = "";
     container.className = "pagination-container";

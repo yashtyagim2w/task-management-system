@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 use App\Helpers\Logger;
 use App\Helpers\Session;
 use App\Helpers\Validation;
+use App\Models\ManagerTeam;
 use App\Models\Users;
 use Throwable;
 
@@ -56,6 +57,20 @@ class AdminUserController extends AdminController {
         }
     }
 
+    public function getAllManagers() {
+        if($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+        try {
+            $userModel = new Users();
+            $response = $userModel->getAllManagers();
+            $this->success("Managers fetched successfully.", $response);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred while fetching managers.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // Create New User (API)
     public function createNewUser() {
         if($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -70,6 +85,7 @@ class AdminUserController extends AdminController {
                 'phone' => $_POST['phone'] ?? '',
                 'password' => $_POST['password'] ?? '',
                 'roleId' => (int) ($_POST['role_id'] ?? 0),
+                'managerId' => (int) ($_POST['manager_id'] ?? 0),
             ];
 
             // Validation
@@ -95,6 +111,10 @@ class AdminUserController extends AdminController {
                 $message = "Password is too long.";
             } elseif ($userData['roleId'] < 2 || $userData['roleId'] > 3) {
                 $message = "Please select a valid role.";
+            } else if($userData['roleId'] == 2 && $userData['managerId']) {
+                $message = "Manager cannot be assigned.";
+            } else if ($userData['roleId'] == 3 && empty($userData['managerId'])) {
+                $message = "Please select a manager.";
             } else {    
                 $hashed_password = password_hash($userData['password'], PASSWORD_DEFAULT);
 
@@ -109,8 +129,12 @@ class AdminUserController extends AdminController {
 
                 $currentUserId = Session::get('userId');
                 // create user
-                $isUserCreated = $userModel->create($userData['firstName'], $userData['lastName'], $userData['email'], $userData['phone'], $hashed_password, $userData['roleId'], $currentUserId);
-                if($isUserCreated){
+                $newUserId = $userModel->create($userData['firstName'], $userData['lastName'], $userData['email'], $userData['phone'], $hashed_password, $userData['roleId'], $currentUserId);
+                if($newUserId){
+                    if($userData['roleId'] == 3){
+                        $managerTeamModel = new ManagerTeam();
+                        $managerTeamModel->addMember($userData['managerId'], $newUserId);
+                    }
                     $message = "User registered successfully!";
                     $this->success($message, [], HTTP_CREATED);
                 }
@@ -150,6 +174,7 @@ class AdminUserController extends AdminController {
             $password = $input['password'] ?? '';
             $roleId = (int) ($input['role_id'] ?? 0);
             $isActive = (int) ($input['is_active'] ?? -1);
+            $managerId = (int) ($input['manager_id'] ?? 0);
 
             $message = "";
         
@@ -174,18 +199,38 @@ class AdminUserController extends AdminController {
                 $message = "Invalid role selected.";
             } else if (!in_array($isActive, [0, 1], true)) {
                 $message = "Invalid active status.";
+            } else if($roleId == 2 && $managerId) {
+                $message = "Manager cannot be assigned.";
+            } else if ($roleId == 3 && empty($managerId)) {
+                $message = "Please select a manager.";
+            } else if($userId === $managerId) {
+                $message = "Manager id and user id cannot be same.";
             }
             
             if ($message !== "") {
                 $this->failure($message, [], HTTP_BAD_REQUEST);
             }
-
+            
+            // Get current manager of the employee (if exists)
+            $managerTeamModel = new ManagerTeam();
+            $currentManagerData = $managerTeamModel->getEmployeeManager($userId);
+            $currentManagerId = $currentManagerData['id'] ?? null;
+        
             $userModel = new Users();
             $userDetails = $userModel->getUserDetailsById($userId);
-
+            
             if(!$userDetails) {
                 $this->failure("User doesn't exist.", [], HTTP_BAD_REQUEST);
             }
+            
+            // Only validate manager if role is Employee
+            if($roleId == 3) {
+                $managerDetails = $userModel->getUserDetailsById($managerId);
+                if(!$managerDetails) {
+                    $this->failure("Manager doesn't exist.", [], HTTP_BAD_REQUEST);
+                }
+            }
+            
             $userDetails = $userDetails[0];
 
             $fieldToUpdate = [];
@@ -212,15 +257,39 @@ class AdminUserController extends AdminController {
             if (in_array($isActive, [0, 1], true) && $isActive !== $userDetails['is_active']) {
                 $fieldToUpdate['is_active'] = $isActive;
             }
+            
+            // Check if manager needs to be updated
+            $managerToUpdate = false;
+            if ($roleId == 3 && $managerId !== $currentManagerId) {
+                $managerToUpdate = true;
+            }
+            
+            // If role changed from Employee (3) to Manager (2), remove from team
+            $removeFromTeam = false;
+            if ($userDetails['role_id'] == 3 && $roleId == 2 && $currentManagerId !== null) {
+                $removeFromTeam = true;
+            }
 
-            if (count($fieldToUpdate) === 0) {
+            if (count($fieldToUpdate) === 0 && !$managerToUpdate && !$removeFromTeam) {
                 $this->failure("No valid fields to update.", [], HTTP_BAD_REQUEST);
             }
 
-            $updated = $userModel->update($userId, $fieldToUpdate);
+            // Update user details if there are fields to update
+            if (count($fieldToUpdate) > 0) {
+                $updated = $userModel->update($userId, $fieldToUpdate);
+                if (!$updated) {
+                    $this->failure("Failed to update user.", [], HTTP_INTERNAL_SERVER_ERROR);
+                }
+            }
 
-            if (!$updated) {
-                $this->failure("Failed to update user.", [], HTTP_INTERNAL_SERVER_ERROR);
+            // Update manager assignment if needed
+            if($managerToUpdate) {
+                $managerTeamModel->adminAssignEmployee($managerId, $userId);
+            }
+            
+            // Remove from team if role changed from Employee to Manager
+            if($removeFromTeam) {
+                $managerTeamModel->removeMember($currentManagerId, $userId);
             }
 
             $this->success("User updated successfully.");
@@ -229,6 +298,6 @@ class AdminUserController extends AdminController {
             Logger::error($e);
             $this->failure("An error occurred while updating the user.", [], HTTP_INTERNAL_SERVER_ERROR);
         }
-    
+
     }
 }

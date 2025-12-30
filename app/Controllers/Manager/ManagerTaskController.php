@@ -1,0 +1,604 @@
+<?php
+
+namespace App\Controllers\Manager;
+
+use App\Helpers\Logger;
+use App\Helpers\Session;
+use App\Models\ManagerTeam;
+use App\Models\Projects;
+use App\Models\ProjectTasks;
+use App\Models\TaskComments;
+use App\Models\TaskActivityLog;
+use Throwable;
+
+class ManagerTaskController extends ManagerController
+{
+    /**
+     * Render tasks page with project selector
+     */
+    public function renderTasksPage(): void
+    {
+        $taskModel = new ProjectTasks();
+        $projectModel = new Projects();
+        $managerId = (int)Session::get('userId');
+
+        $data = [
+            "header_title" => "Tasks - Kanban",
+            "statuses" => $taskModel->getStatuses(),
+            "priorities" => $taskModel->getPriorities(),
+            "projects" => $projectModel->getByManager($managerId, '', null, 'p.name ASC', 100, 0)['data'],
+        ];
+
+        $this->render("/manager/tasks", $data);
+    }
+
+    /**
+     * Get tasks for Kanban board (API)
+     */
+    public function getTasksForKanban(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $projectId = (int)($_GET['project_id'] ?? 0);
+
+            if ($projectId <= 0) {
+                $this->failure("Please select a project.", [], HTTP_BAD_REQUEST);
+            }
+
+            // Verify manager owns this project
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($projectId, $managerId)) {
+                $this->failure("Access denied to this project.", [], HTTP_FORBIDDEN);
+            }
+
+            $taskModel = new ProjectTasks();
+            $tasks = $taskModel->getForKanban($projectId);
+            $canDragDrop = $taskModel->isDragDropAllowed($projectId);
+
+            $this->success("Tasks fetched.", [
+                'tasks' => $tasks,
+                'can_drag_drop' => $canDragDrop
+            ]);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get task details for modal (API)
+     */
+    public function getTaskDetails(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $taskId = (int)($_GET['task_id'] ?? 0);
+
+            if ($taskId <= 0) {
+                $this->failure("Invalid task ID.", [], HTTP_BAD_REQUEST);
+            }
+
+            $taskModel = new ProjectTasks();
+            $task = $taskModel->getById($taskId);
+
+            if (!$task) {
+                $this->failure("Task not found.", [], HTTP_NOT_FOUND);
+            }
+
+            // Verify manager owns the project
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($task['project_id'], $managerId)) {
+                $this->failure("Access denied.", [], HTTP_FORBIDDEN);
+            }
+
+            $assignees = $projectModel->getProjectAssignees($task['project_id']);
+
+            $this->success("Task details fetched.", [
+                'task' => $task,
+                'assignees' => $assignees
+            ]);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get assignable employees for a project
+     */
+    public function getProjectAssignees(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $projectId = (int)($_GET['project_id'] ?? 0);
+
+            if ($projectId <= 0) {
+                $this->failure("Invalid project ID.", [], HTTP_BAD_REQUEST);
+            }
+
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($projectId, $managerId)) {
+                $this->failure("Access denied.", [], HTTP_FORBIDDEN);
+            }
+
+            $assignees = $projectModel->getProjectAssignees($projectId);
+            $this->success("Assignees fetched.", ['assignees' => $assignees]);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Create new task (API)
+     */
+    public function createTask(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $projectId = (int)($_POST['project_id'] ?? 0);
+            $name = trim($_POST['name'] ?? '');
+            $description = trim($_POST['description'] ?? '');
+            $priorityId = (int)($_POST['priority_id'] ?? 2);
+            $statusId = (int)($_POST['status_id'] ?? 1);
+            $dueDate = $_POST['due_date'] ?? null;
+            $assignedTo = isset($_POST['assigned_to']) && $_POST['assigned_to'] !== '' ? (int)$_POST['assigned_to'] : null;
+
+            // Validation
+            if ($projectId <= 0) {
+                $this->failure("Please select a project.", [], HTTP_BAD_REQUEST);
+            }
+
+            // Verify manager owns the project
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($projectId, $managerId)) {
+                $this->failure("Access denied to this project.", [], HTTP_FORBIDDEN);
+            }
+
+            // Name validation
+            $nameRegex = '/^(?=.*[A-Za-z0-9])[A-Za-z0-9 _()\-]{3,255}$/';
+            if (!preg_match($nameRegex, $name)) {
+                $this->failure("Invalid task name. 3-255 chars, letters, numbers, spaces, -, _, () only.", [], HTTP_BAD_REQUEST);
+            }
+
+            if ($priorityId < 1 || $priorityId > 3) {
+                $this->failure("Invalid priority.", [], HTTP_BAD_REQUEST);
+            }
+            if ($statusId < 1 || $statusId > 4) {
+                $this->failure("Invalid status.", [], HTTP_BAD_REQUEST);
+            }
+
+            // Due date validation
+            if ($dueDate !== null && $dueDate !== '') {
+                $dateObj = \DateTime::createFromFormat('Y-m-d', $dueDate);
+                $today = new \DateTime('today');
+                if (!$dateObj || $dateObj < $today) {
+                    $this->failure("Due date cannot be in the past.", [], HTTP_BAD_REQUEST);
+                }
+            } else {
+                $dueDate = null;
+            }
+
+            // Validate assignee is in project
+            if ($assignedTo !== null) {
+                if (!$projectModel->isUserAssigned($projectId, $assignedTo)) {
+                    $this->failure("Assignee not in project.", [], HTTP_BAD_REQUEST);
+                }
+            }
+
+            $taskModel = new ProjectTasks();
+            $taskId = $taskModel->create($projectId, $managerId, $name, $description, $priorityId, $statusId, $dueDate, $assignedTo);
+
+            if ($taskId) {
+                // Log activity
+                $activityLog = new TaskActivityLog();
+                $activityLog->logActivity($projectId, $taskId, $managerId, 'created', [
+                    'task_name' => $name,
+                    'priority_id' => $priorityId,
+                    'status_id' => $statusId,
+                    'due_date' => $dueDate,
+                    'assigned_to' => $assignedTo
+                ]);
+
+                if ($assignedTo) {
+                    $activityLog->logActivity($projectId, $taskId, $managerId, 'assigned', ['assigned_to' => $assignedTo]);
+                }
+
+                $this->success("Task created.", ['task_id' => $taskId], HTTP_CREATED);
+            }
+
+            $this->failure("Failed to create task.", [], HTTP_INTERNAL_SERVER_ERROR);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Update task status (drag-drop)
+     */
+    public function updateTaskStatus(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $input = json_decode(file_get_contents('php://input'), true);
+            $taskId = (int)($input['task_id'] ?? 0);
+            $statusId = (int)($input['status_id'] ?? 0);
+
+            if ($taskId <= 0 || $statusId < 1 || $statusId > 4) {
+                $this->failure("Invalid parameters.", [], HTTP_BAD_REQUEST);
+            }
+
+            $taskModel = new ProjectTasks();
+            $task = $taskModel->getById($taskId);
+
+            if (!$task) {
+                $this->failure("Task not found.", [], HTTP_NOT_FOUND);
+            }
+
+            // Verify manager owns the project
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($task['project_id'], $managerId)) {
+                $this->failure("Access denied.", [], HTTP_FORBIDDEN);
+            }
+
+            if (!$taskModel->isDragDropAllowed($task['project_id'])) {
+                $this->failure("Project must be in progress.", [], HTTP_FORBIDDEN);
+            }
+
+            $oldStatusId = $task['task_status_id'];
+            $updated = $taskModel->updateStatus($taskId, $statusId);
+
+            if ($updated) {
+                $activityLog = new TaskActivityLog();
+                $activityLog->logActivity($task['project_id'], $taskId, $managerId, 'status_changed', [
+                    'old_status_id' => $oldStatusId,
+                    'new_status_id' => $statusId
+                ]);
+
+                $this->success("Status updated.");
+            }
+
+            $this->failure("Failed to update.", [], HTTP_INTERNAL_SERVER_ERROR);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Update task (API)
+     */
+    public function updateTask(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $input = json_decode(file_get_contents('php://input'), true);
+            $taskId = (int)($input['task_id'] ?? 0);
+
+            if ($taskId <= 0) {
+                $this->failure("Invalid task ID.", [], HTTP_BAD_REQUEST);
+            }
+
+            $taskModel = new ProjectTasks();
+            $task = $taskModel->getById($taskId);
+
+            if (!$task) {
+                $this->failure("Task not found.", [], HTTP_NOT_FOUND);
+            }
+
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($task['project_id'], $managerId)) {
+                $this->failure("Access denied.", [], HTTP_FORBIDDEN);
+            }
+
+            $fieldsToUpdate = [];
+            $changes = [];
+
+            if (isset($input['name']) && !empty(trim($input['name']))) {
+                $name = trim($input['name']);
+                $nameRegex = '/^(?=.*[A-Za-z0-9])[A-Za-z0-9 _()\-]{3,255}$/';
+                if (!preg_match($nameRegex, $name)) {
+                    $this->failure("Invalid task name.", [], HTTP_BAD_REQUEST);
+                }
+                if ($name !== $task['name']) {
+                    $fieldsToUpdate['name'] = $name;
+                    $changes['name'] = ['old' => $task['name'], 'new' => $name];
+                }
+            }
+
+            if (isset($input['description'])) {
+                $description = trim($input['description']);
+                if ($description !== $task['description']) {
+                    $fieldsToUpdate['description'] = $description;
+                    $changes['description'] = true;
+                }
+            }
+
+            if (isset($input['status_id']) && $input['status_id'] >= 1 && $input['status_id'] <= 4) {
+                $statusId = (int)$input['status_id'];
+                if ($statusId !== (int)$task['task_status_id']) {
+                    $fieldsToUpdate['task_status_id'] = $statusId;
+                    $changes['status'] = ['old_id' => $task['task_status_id'], 'new_id' => $statusId];
+                }
+            }
+
+            if (isset($input['priority_id']) && $input['priority_id'] >= 1 && $input['priority_id'] <= 3) {
+                $priorityId = (int)$input['priority_id'];
+                if ($priorityId !== (int)$task['task_priority_id']) {
+                    $fieldsToUpdate['task_priority_id'] = $priorityId;
+                    $changes['priority'] = ['old_id' => $task['task_priority_id'], 'new_id' => $priorityId];
+                }
+            }
+
+            if (isset($input['due_date'])) {
+                $dueDate = $input['due_date'];
+                if ($dueDate === '' || $dueDate === null) {
+                    $fieldsToUpdate['due_date'] = null;
+                    $changes['due_date'] = ['old' => $task['due_date'], 'new' => null];
+                } else {
+                    $dateObj = \DateTime::createFromFormat('Y-m-d', $dueDate);
+                    $today = new \DateTime('today');
+                    if ($dateObj && $dateObj >= $today) {
+                        $fieldsToUpdate['due_date'] = $dueDate;
+                        $changes['due_date'] = ['old' => $task['due_date'], 'new' => $dueDate];
+                    }
+                }
+            }
+
+            if (array_key_exists('assigned_to', $input)) {
+                $assignedTo = $input['assigned_to'] !== null && $input['assigned_to'] !== '' ? (int)$input['assigned_to'] : null;
+                if ($assignedTo != $task['assigned_to']) {
+                    $fieldsToUpdate['assigned_to'] = $assignedTo;
+                    $changes['assigned_to'] = ['old' => $task['assigned_to'], 'new' => $assignedTo];
+                }
+            }
+
+            if (empty($fieldsToUpdate)) {
+                $this->failure("No changes.", [], HTTP_BAD_REQUEST);
+            }
+
+            $updated = $taskModel->update($taskId, $fieldsToUpdate);
+
+            if ($updated) {
+                $activityLog = new TaskActivityLog();
+                $activityLog->logActivity($task['project_id'], $taskId, $managerId, 'updated', $changes);
+                $this->success("Task updated.");
+            }
+
+            $this->failure("Failed to update.", [], HTTP_INTERNAL_SERVER_ERROR);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Delete task (API)
+     */
+    public function deleteTask(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $input = json_decode(file_get_contents('php://input'), true);
+            $taskId = (int)($input['task_id'] ?? 0);
+
+            if ($taskId <= 0) {
+                $this->failure("Invalid task ID.", [], HTTP_BAD_REQUEST);
+            }
+
+            $taskModel = new ProjectTasks();
+            $task = $taskModel->getById($taskId);
+
+            if (!$task) {
+                $this->failure("Task not found.", [], HTTP_NOT_FOUND);
+            }
+
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($task['project_id'], $managerId)) {
+                $this->failure("Access denied.", [], HTTP_FORBIDDEN);
+            }
+
+            $deleted = $taskModel->softDelete($taskId);
+
+            if ($deleted) {
+                $activityLog = new TaskActivityLog();
+                $activityLog->logActivity($task['project_id'], $taskId, $managerId, 'deleted', ['task_name' => $task['name']]);
+                $this->success("Task deleted.");
+            }
+
+            $this->failure("Failed to delete.", [], HTTP_INTERNAL_SERVER_ERROR);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get task comments (API)
+     */
+    public function getTaskComments(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $taskId = (int)($_GET['task_id'] ?? 0);
+
+            if ($taskId <= 0) {
+                $this->failure("Invalid task ID.", [], HTTP_BAD_REQUEST);
+            }
+
+            $commentModel = new TaskComments();
+            $comments = $commentModel->getByTask($taskId);
+
+            $this->success("Comments fetched.", ['comments' => $comments]);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Add comment to task (API)
+     */
+    public function addTaskComment(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $userId = (int)Session::get('userId');
+            $taskId = (int)($_POST['task_id'] ?? 0);
+            $comment = trim($_POST['comment'] ?? '');
+
+            if ($taskId <= 0) {
+                $this->failure("Invalid task ID.", [], HTTP_BAD_REQUEST);
+            }
+            if (empty($comment)) {
+                $this->failure("Comment cannot be empty.", [], HTTP_BAD_REQUEST);
+            }
+
+            $taskModel = new ProjectTasks();
+            $task = $taskModel->getById($taskId);
+
+            if (!$task) {
+                $this->failure("Task not found.", [], HTTP_NOT_FOUND);
+            }
+
+            $commentModel = new TaskComments();
+            $commentId = $commentModel->create($task['project_id'], $taskId, $userId, $comment);
+
+            if ($commentId) {
+                $activityLog = new TaskActivityLog();
+                $activityLog->logActivity($task['project_id'], $taskId, $userId, 'comment_added', ['comment_id' => $commentId]);
+
+                $comments = $commentModel->getByTask($taskId);
+                $newComment = array_pop($comments);
+
+                $this->success("Comment added.", ['comment' => $newComment], HTTP_CREATED);
+            }
+
+            $this->failure("Failed to add comment.", [], HTTP_INTERNAL_SERVER_ERROR);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get task activity logs (API)
+     */
+    public function getTaskActivityLogs(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $taskId = (int)($_GET['task_id'] ?? 0);
+
+            if ($taskId <= 0) {
+                $this->failure("Invalid task ID.", [], HTTP_BAD_REQUEST);
+            }
+
+            $activityLog = new TaskActivityLog();
+            $logs = $activityLog->getTaskLogs($taskId, 100, 0);
+
+            $this->success("Activity logs fetched.", $logs);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get project activity logs (API)
+     */
+    public function getProjectActivityLogs(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $projectId = (int)($_GET['project_id'] ?? 0);
+
+            if ($projectId <= 0) {
+                $this->failure("Invalid project ID.", [], HTTP_BAD_REQUEST);
+            }
+
+            $projectModel = new Projects();
+            if (!$projectModel->isManager($projectId, $managerId)) {
+                $this->failure("Access denied.", [], HTTP_FORBIDDEN);
+            }
+
+            $activityLog = new TaskActivityLog();
+            $logs = $activityLog->getProjectLogs($projectId, 100, 0);
+
+            $this->success("Project activity logs fetched.", $logs);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Get tasks paginated (legacy fallback)
+     */
+    public function getTasksPaginated(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->failure("Invalid request method.", [], HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        try {
+            $managerId = (int)Session::get('userId');
+            $search = $_GET['search'] ?? '';
+            $statusFilter = isset($_GET['status_id']) && $_GET['status_id'] !== '' ? (int)$_GET['status_id'] : null;
+            $priorityFilter = isset($_GET['priority_id']) && $_GET['priority_id'] !== '' ? (int)$_GET['priority_id'] : null;
+
+            ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
+
+            $taskModel = new ProjectTasks();
+            $response = $taskModel->getByCreator($managerId, $search, $statusFilter, $priorityFilter, 't.created_at DESC', $limit, $offset);
+            $structuredResponse = $this->paginatedResponse($response['data'], $page, $limit, $response['total_count']);
+
+            $this->success("Tasks fetched.", $structuredResponse);
+        } catch (Throwable $e) {
+            Logger::error($e);
+            $this->failure("An error occurred.", [], HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+}

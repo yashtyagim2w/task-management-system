@@ -42,6 +42,16 @@ abstract class Model {
         return $stmt->execute();
     }
 
+    // insert and return id
+    public function insertAndReturnId(string $sql, string $types = "", array $params = []): int {
+        $stmt = $this->db->prepare($sql);
+        if ($types && $params) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        return $this->db->insert_id;
+    }
+
     // sanitize input to prevent SQL injection
     public function getSanitizedInput(string $input): string {
         return $this->db->real_escape_string($input);

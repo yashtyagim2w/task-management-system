@@ -1,13 +1,16 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Model;
 
-class Users extends Model {
+class Users extends Model
+{
 
     protected string $tableName = "users";
-    
-    public function getByEmail(string $email): array {
+
+    public function getByEmail(string $email): array
+    {
         $stmt = "SELECT 
             u.id,
             u.first_name,   
@@ -28,7 +31,8 @@ class Users extends Model {
         return $result;
     }
 
-    public function getUserDetailsById(int $id): array {
+    public function getUserDetailsById(int $id): array
+    {
         $stmt = "SELECT 
             u.id,
             u.first_name,
@@ -38,9 +42,11 @@ class Users extends Model {
             u.password,
             u.role_id,
             u.is_active,
-            r.name AS role_name
+            r.name AS role_name,
+            COALESCE(mt.manager_id, '-') as manager_id
         FROM {$this->tableName} u 
         JOIN roles r ON u.role_id = r.id 
+        LEFT JOIN manager_team_members mt ON u.id = mt.member_id AND mt.is_active = 1
         WHERE u.id = ? 
         LIMIT 1;";
 
@@ -49,26 +55,29 @@ class Users extends Model {
         return $result;
     }
 
-    public function existByEmailOrPhone(string $email, string $phone): bool {
+    public function existByEmailOrPhone(string $email, string $phone): bool
+    {
         $sql = "SELECT id FROM {$this->tableName} WHERE email = ? OR phone_number = ? LIMIT 1;";
         $result = $this->rawQuery($sql, "ss", [$email, $phone]);
 
         return count($result) > 0;
     }
 
-    public function create(string $firstName, string $lastName, string $email, string $phone, string $hashedPassword, int $roleId, int $createdBy): bool {
+    public function create(string $firstName, string $lastName, string $email, string $phone, string $hashedPassword, int $roleId, int $createdBy): int
+    {
         $sql = "INSERT INTO {$this->tableName} (first_name, last_name, email, phone_number, password, role_id, is_active, created_by) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
         $types = "ssssssii";
         $params = [$firstName, $lastName, $email, $phone, $hashedPassword, $roleId, 1, $createdBy];
-        return $this->rawExecute($sql, $types, $params);
+        return $this->insertAndReturnId($sql, $types, $params);
     }
 
-    public function getAllUserPaginated(string $search, string $sortColumn, ?int $roleFilter, ?int $activeStatusFilter, int $currentUserId, int $limit, int $offset): array {
-        
+    public function getAllUserPaginated(string $search, string $sortColumn, ?int $roleFilter, ?int $activeStatusFilter, int $currentUserId, int $limit, int $offset): array
+    {
+
         // Exclude current user from the list
         $WHERE = "WHERE u.id != " . $currentUserId;
-        
+
         $search = $this->getSanitizedInput($search);
 
         if ($roleFilter !== null) {
@@ -89,7 +98,10 @@ class Users extends Model {
         }
 
         $ORDER = "ORDER BY " . $sortColumn;
-        $JOIN = "JOIN roles r ON u.role_id = r.id";
+        $JOIN = "LEFT JOIN roles r ON u.role_id = r.id
+        LEFT JOIN manager_team_members mt ON u.id = mt.member_id AND mt.is_active = 1
+        LEFT JOIN users m ON mt.manager_id = m.id
+        ";
         $mainAlias = "u";
         $sql = "SELECT
             u.id,
@@ -100,7 +112,11 @@ class Users extends Model {
             r.id AS role_id,
             r.name AS role_name,
             u.is_active,
-            u.created_at
+            u.created_at,
+            COALESCE(mt.manager_id, '-') as manager_id,
+            COALESCE(m.email, '-') as manager_email,
+            COALESCE(m.first_name, '-') as manager_first_name,
+            COALESCE(m.last_name, '-') as manager_last_name
         FROM {$this->tableName} {$mainAlias}
         {$JOIN}
         {$WHERE}
@@ -110,7 +126,7 @@ class Users extends Model {
         error_log("here: " . print_r($sql, true));
         $types = "ii";
         $params = [$limit, $offset];
-        
+
         $data = $this->rawQuery($sql, $types, $params);
         $totalCount = $this->getCountWithWhereClause($mainAlias, $WHERE, $JOIN);
         return [
@@ -119,4 +135,18 @@ class Users extends Model {
         ];
     }
 
+    public function getAllManagers(): array
+    {
+        $sql = "SELECT id, first_name, last_name, email, phone_number FROM users WHERE role_id = 2;";
+        $types = "";
+        $result = $this->rawQuery($sql, $types);
+        return $result;
+    }
+
+    public function getUsersByRole(int $roleId): array
+    {
+        $sql = "SELECT id, first_name, last_name, email, phone_number FROM users WHERE role_id = ? AND is_active = 1 ORDER BY first_name ASC;";
+        $result = $this->rawQuery($sql, "i", [$roleId]);
+        return $result;
+    }
 }

@@ -46,7 +46,7 @@ class AuthService extends Service {
         if (!$user) {
             return $this->failure("User not found");
         }
-        
+
         if(!$user['is_active']) {
             return $this->failure("User account is inactive. Please contact support.");
         }
@@ -65,7 +65,6 @@ class AuthService extends Service {
         Session::set('email', $userData['email']);
         Session::set('roleId', $userData['roleId']);
         Session::set('roleName', $userData['roleName']);
-        Session::regenerate();
 
         return $this->success("User session refreshed", $userData);
     }

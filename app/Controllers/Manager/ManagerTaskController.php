@@ -497,7 +497,7 @@ class ManagerTaskController extends ManagerController
             }
 
             $commentModel = new TaskComments();
-            $commentId = $commentModel->create($task['project_id'], $taskId, $userId, $comment);
+            $commentId = $commentModel->create($task['project_id'], $userId, $comment, $taskId);
 
             if ($commentId) {
                 $activityLog = new TaskActivityLog();

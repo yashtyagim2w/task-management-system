@@ -6,11 +6,20 @@ import {
     initDragDrop,
     initCardClick,
     getStatusId,
-    formatActivityLog,
-    formatChatMessage,
     showNotification,
     escapeHtml
 } from '/assets/js/kanban.js';
+
+import {
+    initChatModule,
+    setCurrentTaskId,
+    startChatAutoRefresh,
+    stopChatAutoRefresh,
+    loadTaskComments,
+    loadTaskActivity,
+    initChatForm,
+    initActivityTabRefresh
+} from '/assets/js/chat.js';
 
 // State
 let currentProjectId = null;
@@ -18,7 +27,6 @@ let currentTaskId = null;
 let canEdit = true; // Admin can always edit
 let tasksData = {}; // Local state for tasks
 let canDragDrop = false;
-let chatRefreshInterval = null; // Interval for auto-refreshing chat
 
 // DOM Elements
 const projectSelect = document.getElementById('projectSelect');
@@ -27,6 +35,7 @@ const emptyState = document.getElementById('emptyState');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    initChatModule('/api/admin');
     initProjectSelector();
     initDragDrop('#kanbanContainer', handleStatusChange);
     initCardClick('#kanbanContainer', openTaskModal);
@@ -155,6 +164,7 @@ async function handleStatusChange(taskId, statusName) {
 // Open task detail modal
 async function openTaskModal(taskId) {
     currentTaskId = parseInt(taskId);
+    setCurrentTaskId(currentTaskId);
 
     try {
         const res = await fetch(`/api/admin/task/details?task_id=${taskId}`);
@@ -207,80 +217,10 @@ async function openTaskModal(taskId) {
         document.getElementById('taskDetailModal').addEventListener('hidden.bs.modal', () => {
             stopChatAutoRefresh();
             currentTaskId = null;
+            setCurrentTaskId(null);
         }, { once: true });
     } catch (err) {
         showNotification('error', 'Network Error');
-    }
-}
-
-/**
- * Start chat auto-refresh interval
- */
-function startChatAutoRefresh() {
-    stopChatAutoRefresh();
-    chatRefreshInterval = setInterval(() => {
-        if (currentTaskId) {
-            loadTaskComments();
-        }
-    }, 2000);
-}
-
-/**
- * Stop chat auto-refresh interval
- */
-function stopChatAutoRefresh() {
-    if (chatRefreshInterval) {
-        clearInterval(chatRefreshInterval);
-        chatRefreshInterval = null;
-    }
-}
-
-// Load task comments (chat)
-async function loadTaskComments() {
-    if (!currentTaskId) return;
-
-    const container = document.getElementById('taskChatContainer');
-    container.innerHTML = '<div class="text-center p-2">Loading...</div>';
-
-    try {
-        const res = await fetch(`/api/admin/task/comments?task_id=${currentTaskId}`);
-        const result = await res.json();
-
-        if (result.success) {
-            const comments = result.data.comments;
-            if (comments.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted p-2">No messages yet</div>';
-            } else {
-                container.innerHTML = comments.map(c => formatChatMessage(c)).join('');
-                container.scrollTop = container.scrollHeight;
-            }
-        }
-    } catch (err) {
-        container.innerHTML = '<div class="text-center text-danger p-2">Error loading</div>';
-    }
-}
-
-// Load task activity
-async function loadTaskActivity() {
-    if (!currentTaskId) return;
-
-    const container = document.getElementById('taskActivityContainer');
-    container.innerHTML = '<div class="text-center p-2">Loading...</div>';
-
-    try {
-        const res = await fetch(`/api/admin/task/activity-logs?task_id=${currentTaskId}`);
-        const result = await res.json();
-
-        if (result.success) {
-            const logs = result.data.data;
-            if (logs.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted p-2">No activity yet</div>';
-            } else {
-                container.innerHTML = logs.map(l => formatActivityLog(l)).join('');
-            }
-        }
-    } catch (err) {
-        container.innerHTML = '<div class="text-center text-danger p-2">Error loading</div>';
     }
 }
 
@@ -403,38 +343,6 @@ function initTaskForms() {
     });
 }
 
-// Initialize chat form
-function initChatForm() {
-    document.getElementById('taskChatForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const input = document.getElementById('taskChatInput');
-        const comment = input.value.trim();
-
-        if (!comment || !currentTaskId) return;
-
-        const formData = new FormData();
-        formData.append('task_id', currentTaskId);
-        formData.append('comment', comment);
-
-        try {
-            const res = await fetch('/api/admin/task/comment', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await res.json();
-
-            if (result.success) {
-                input.value = '';
-                loadTaskComments();
-            } else {
-                showNotification('error', 'Error', result.message);
-            }
-        } catch (err) {
-            showNotification('error', 'Network Error');
-        }
-    });
-}
-
 // Project activity modal
 document.getElementById('showProjectActivityBtn')?.addEventListener('click', async () => {
     if (!currentProjectId) return;
@@ -478,15 +386,3 @@ document.getElementById('createTaskBtn')?.addEventListener('click', () => {
     }
     new bootstrap.Modal(document.getElementById('createTaskModal')).show();
 });
-
-/**
- * Initialize activity tab to refresh on click
- */
-function initActivityTabRefresh() {
-    const activityTab = document.querySelector('[data-bs-target="#activityTab"]');
-    activityTab?.addEventListener('shown.bs.tab', () => {
-        if (currentTaskId) {
-            loadTaskActivity();
-        }
-    });
-}

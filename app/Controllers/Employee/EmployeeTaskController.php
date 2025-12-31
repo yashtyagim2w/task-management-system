@@ -241,7 +241,7 @@ class EmployeeTaskController extends EmployeeController
             }
 
             $commentModel = new TaskComments();
-            $commentId = $commentModel->create($task['project_id'], $taskId, $employeeId, $comment);
+            $commentId = $commentModel->create($task['project_id'], $employeeId, $comment, $taskId);
 
             if ($commentId) {
                 $activityLog = new TaskActivityLog();

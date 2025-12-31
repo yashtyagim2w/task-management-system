@@ -431,7 +431,7 @@ input {
 
 /* ========== Activity Log Styles (Simple) ========== */
 .activity-log {
-    max-height: 300px;
+    max-height: 88vh;
     overflow-y: auto;
 }
 
@@ -470,8 +470,15 @@ input {
 }
 
 /* ========== Chat Styles (Simple) ========== */
+.chat-tab {
+    height: 84vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+}
+
 .chat-container {
-    max-height: 300px;
+    max-height: 80vh;
     overflow-y: auto;
     padding: 0.5rem;
 }

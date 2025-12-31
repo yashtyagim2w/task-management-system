@@ -11,7 +11,7 @@
             <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
         </div>
     </div>
-    
+
     <!-- Project Selector -->
     <div class="project-selector">
         <label class="form-label mb-0 fw-bold">Select Project:</label>
@@ -22,14 +22,14 @@
             <?php endforeach; ?>
         </select>
     </div>
-    
+
     <!-- Empty State -->
     <div id="emptyState" class="empty-state">
         <i class="bi bi-kanban"></i>
         <h5>Select a Project</h5>
         <p>Choose a project from the dropdown above to view its task board</p>
     </div>
-    
+
     <!-- Kanban Board Container -->
     <div id="kanbanContainer" class="kanban-container d-none"></div>
 
@@ -220,11 +220,13 @@
 
                     <!-- Chat Tab -->
                     <div class="tab-pane fade" id="chatTab">
-                        <div id="taskChatContainer" class="chat-container"></div>
-                        <form id="taskChatForm" class="chat-input-container">
-                            <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." required>
-                            <button type="submit" class="btn btn-primary">Send</button>
-                        </form>
+                        <div class="chat-tab">
+                            <div id="taskChatContainer" class="chat-container"></div>
+                            <form id="taskChatForm" class="chat-input-container">
+                                <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." required>
+                                <button type="submit" class="btn btn-primary">Send</button>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Activity Tab -->

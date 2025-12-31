@@ -12,11 +12,17 @@ class TaskComments extends Model
     /**
      * Create a new comment
      */
-    public function create(int $projectId, int $taskId, int $authorId, string $comment): int|false
+    public function create(int $projectId, int $authorId, string $comment, ?int $taskId = null): int|false
     {
-        $sql = "INSERT INTO {$this->tableName} (project_id, task_id, author_id, comment) 
-                VALUES (?, ?, ?, ?)";
-        $success = $this->rawExecute($sql, "iiis", [$projectId, $taskId, $authorId, $comment]);
+        if ($taskId === null) { 
+            $sql = "INSERT INTO {$this->tableName} (project_id, author_id, comment) 
+                    VALUES (?, ?, ?)";
+            $success = $this->rawExecute($sql, "iis", [$projectId, $authorId, $comment]);
+        } else {
+            $sql = "INSERT INTO {$this->tableName} (project_id, task_id, author_id, comment) 
+                    VALUES (?, ?, ?, ?)";
+            $success = $this->rawExecute($sql, "iiis", [$projectId, $taskId, $authorId, $comment]);
+        }
 
         if ($success) {
             return $this->db->insert_id;
@@ -37,9 +43,27 @@ class TaskComments extends Model
         FROM {$this->tableName} c
         JOIN users u ON c.author_id = u.id
         WHERE c.task_id = ?
-        ORDER BY c.created_at DESC";
+        ORDER BY c.created_at";
 
         return $this->rawQuery($sql, "i", [$taskId]);
+    }
+
+    /**
+     * Get comments for a project
+     */
+    public function getByProject(int $projectId): array
+    {
+        $sql = "SELECT 
+            c.*,
+            u.first_name,
+            u.last_name,
+            u.email
+        FROM {$this->tableName} c
+        JOIN users u ON c.author_id = u.id
+        WHERE c.project_id = ?
+        ORDER BY c.created_at";
+
+        return $this->rawQuery($sql, "i", [$projectId]);
     }
 
     /**

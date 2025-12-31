@@ -149,4 +149,25 @@ class Users extends Model
         $result = $this->rawQuery($sql, "i", [$roleId]);
         return $result;
     }
+
+    /**
+     * Get dashboard statistics for users
+     */
+    public function getDashboardStats(): array
+    {
+        $sql = "SELECT 
+            COUNT(*) as total_users,
+            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_users,
+            SUM(CASE WHEN role_id = 2 THEN 1 ELSE 0 END) as total_managers,
+            SUM(CASE WHEN role_id = 3 THEN 1 ELSE 0 END) as total_employees
+        FROM {$this->tableName}";
+
+        $result = $this->rawQuery($sql);
+        return $result[0] ?? [
+            'total_users' => 0,
+            'active_users' => 0,
+            'total_managers' => 0,
+            'total_employees' => 0
+        ];
+    }
 }

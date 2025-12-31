@@ -106,4 +106,33 @@ class TaskActivityLog extends Model
             'total_count' => $totalCount
         ];
     }
+
+    /**
+     * Get recent activities for dashboard
+     * @param int|null $managerId Filter by manager's projects only
+     */
+    public function getRecentActivities(?int $managerId = null, int $limit = 10): array
+    {
+        $condition = $managerId !== null ? "AND p.manager_id = ?" : "";
+        $params = $managerId !== null ? [$managerId, $limit] : [$limit];
+        $types = $managerId !== null ? "ii" : "i";
+
+        $sql = "SELECT 
+            tal.id,
+            tal.action,
+            tal.created_at,
+            u.first_name,
+            u.last_name,
+            t.name as task_name,
+            p.name as project_name
+        FROM {$this->tableName} tal
+        JOIN projects p ON tal.project_id = p.id
+        LEFT JOIN users u ON tal.user_id = u.id
+        LEFT JOIN project_tasks t ON tal.task_id = t.id
+        WHERE p.is_deleted = 0 {$condition}
+        ORDER BY tal.created_at DESC
+        LIMIT ?";
+
+        return $this->rawQuery($sql, $types, $params);
+    }
 }

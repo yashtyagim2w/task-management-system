@@ -469,7 +469,7 @@ class ProjectTasks extends Model
     }
 
     /**
-     * Get tasks due soon (within 3 days)
+     * Get tasks due soon (within 3 days) - only tasks assigned to the user
      */
     public function getDueSoon(int $userId, int $limit = 5): array
     {
@@ -482,9 +482,9 @@ class ProjectTasks extends Model
         JOIN task_statuses ts ON t.task_status_id = ts.id
         JOIN task_priorities tp ON t.task_priority_id = tp.id
         JOIN projects p ON t.project_id = p.id
-        JOIN project_user_assignments pua ON p.id = pua.project_id
         WHERE t.is_deleted = 0 
-        AND pua.user_id = ?
+        AND p.is_deleted = 0
+        AND t.assigned_to = ?
         AND t.due_date IS NOT NULL 
         AND t.due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 3 DAY)
         AND t.task_status_id != 3
@@ -619,5 +619,56 @@ class ProjectTasks extends Model
         $result = $this->rawQuery($sql, "i", [$projectId]);
         // Status 2 = in_progress
         return !empty($result) && (int)$result[0]['project_status_id'] === 2;
+    }
+
+    /**
+     * Get dashboard statistics for tasks (Admin/Manager)
+     * @param int|null $managerId Filter by manager's projects
+     */
+    public function getDashboardStats(?int $managerId = null): array
+    {
+        $condition = $managerId !== null ? "p.manager_id = ?" : "1=1";
+        $params = $managerId !== null ? [$managerId] : [];
+        $types = $managerId !== null ? "i" : "";
+
+        $sql = "SELECT 
+            COUNT(*) as total_tasks,
+            SUM(CASE WHEN t.task_status_id = 3 THEN 1 ELSE 0 END) as completed_tasks,
+            SUM(CASE WHEN t.due_date IS NOT NULL AND t.due_date < CURDATE() AND t.task_status_id != 3 THEN 1 ELSE 0 END) as overdue_tasks
+        FROM {$this->tableName} t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.is_deleted = 0 AND p.is_deleted = 0 AND {$condition}";
+
+        $result = $this->rawQuery($sql, $types, $params);
+        return $result[0] ?? [
+            'total_tasks' => 0,
+            'completed_tasks' => 0,
+            'overdue_tasks' => 0
+        ];
+    }
+
+    /**
+     * Get dashboard statistics for employee's assigned tasks
+     */
+    public function getEmployeeDashboardStats(int $userId): array
+    {
+        $sql = "SELECT 
+            COUNT(*) as total_tasks,
+            SUM(CASE WHEN t.task_status_id = 3 THEN 1 ELSE 0 END) as completed_tasks,
+            SUM(CASE WHEN t.task_status_id = 2 THEN 1 ELSE 0 END) as in_progress_tasks,
+            SUM(CASE WHEN t.due_date IS NOT NULL AND t.due_date < CURDATE() AND t.task_status_id != 3 THEN 1 ELSE 0 END) as overdue_tasks,
+            SUM(CASE WHEN t.due_date = CURDATE() AND t.task_status_id != 3 THEN 1 ELSE 0 END) as due_today
+        FROM {$this->tableName} t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.is_deleted = 0 AND p.is_deleted = 0 AND t.assigned_to = ?";
+
+        $result = $this->rawQuery($sql, "i", [$userId]);
+        return $result[0] ?? [
+            'total_tasks' => 0,
+            'completed_tasks' => 0,
+            'in_progress_tasks' => 0,
+            'overdue_tasks' => 0,
+            'due_today' => 0
+        ];
     }
 }

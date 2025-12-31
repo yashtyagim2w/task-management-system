@@ -5,9 +5,10 @@
             <button type="button" class="btn btn-primary" id="createTaskBtn">
                 <i class="bi bi-plus-circle"></i> Create Task
             </button>
-            <button type="button" class="btn btn-outline-secondary" id="showProjectActivityBtn">
+            <button type="button" class="btn btn-outline-primary" id="showProjectActivityBtn">
                 <i class="bi bi-activity"></i> Project Activity
             </button>
+            <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
         </div>
     </div>
     

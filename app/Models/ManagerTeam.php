@@ -275,4 +275,14 @@ class ManagerTeam extends Model
 
         return $this->rawQuery($sql, "i", [$managerId]);
     }
+
+    /**
+     * Get team member count for a manager
+     */
+    public function getTeamMemberCount(int $managerId): int
+    {
+        $sql = "SELECT COUNT(*) as count FROM {$this->tableName} WHERE manager_id = ? AND is_active = 1";
+        $result = $this->rawQuery($sql, "i", [$managerId]);
+        return (int)($result[0]['count'] ?? 0);
+    }
 }

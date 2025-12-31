@@ -3,9 +3,47 @@
         <div class="nav-heading">
             <h1>Employee Dashboard</h1>
         </div>
-        <div class="page-nav">
-            <a href="/employee/projects" class="btn btn-primary">My Projects</a>
-            <a href="/employee/tasks" class="btn btn-primary">My Tasks</a>
+        <div class="quick-links">
+            <a href="/employee/projects" class="btn btn-outline-primary btn-sm">My Projects</a>
+            <a href="/employee/tasks" class="btn btn-outline-primary btn-sm">My Tasks</a>
+        </div>
+    </div>
+
+    <!-- Task Stats -->
+    <div class="stats-category">
+        <h4 class="stats-category-title">Task Stats</h4>
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-value"><?= $taskStats['total_tasks'] ?? 0 ?></div>
+                <div class="stat-label">My Tasks</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><?= $taskStats['completed_tasks'] ?? 0 ?></div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><?= $taskStats['in_progress_tasks'] ?? 0 ?></div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><?= $taskStats['overdue_tasks'] ?? 0 ?></div>
+                <div class="stat-label">Overdue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value"><?= $taskStats['due_today'] ?? 0 ?></div>
+                <div class="stat-label">Due Today</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Stats -->
+    <div class="stats-category">
+        <h4 class="stats-category-title">Project Stats</h4>
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <div class="stat-value"><?= $projectCount ?? 0 ?></div>
+                <div class="stat-label">My Projects</div>
+            </div>
         </div>
     </div>
 

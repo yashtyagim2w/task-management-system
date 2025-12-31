@@ -424,4 +424,43 @@ class Projects extends Model
 
         return $this->rawQuery($sql, "i", [$projectId]);
     }
+
+    /**
+     * Get dashboard statistics for projects
+     * @param int|null $managerId Filter by manager (for manager dashboard)
+     */
+    public function getDashboardStats(?int $managerId = null): array
+    {
+        $condition = $managerId !== null ? "manager_id = ?" : "1=1";
+        $params = $managerId !== null ? [$managerId] : [];
+        $types = $managerId !== null ? "i" : "";
+
+        $sql = "SELECT 
+            COUNT(*) as total_projects,
+            SUM(CASE WHEN project_status_id = 4 THEN 1 ELSE 0 END) as completed_projects,
+            SUM(CASE WHEN project_status_id = 2 THEN 1 ELSE 0 END) as in_progress_projects
+        FROM {$this->tableName}
+        WHERE is_deleted = 0 AND {$condition}";
+
+        $result = $this->rawQuery($sql, $types, $params);
+        return $result[0] ?? [
+            'total_projects' => 0,
+            'completed_projects' => 0,
+            'in_progress_projects' => 0
+        ];
+    }
+
+    /**
+     * Get count of projects assigned to an employee
+     */
+    public function getEmployeeProjectCount(int $userId): int
+    {
+        $sql = "SELECT COUNT(DISTINCT p.id) as count
+        FROM {$this->tableName} p
+        JOIN project_user_assignments pua ON p.id = pua.project_id
+        WHERE p.is_deleted = 0 AND pua.user_id = ?";
+
+        $result = $this->rawQuery($sql, "i", [$userId]);
+        return (int)($result[0]['count'] ?? 0);
+    }
 }

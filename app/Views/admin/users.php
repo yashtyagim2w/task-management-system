@@ -5,7 +5,7 @@
         </div>
         <div class="page-nav">
             <button data-bs-toggle="modal" data-bs-target="#createUserModal" class="btn btn-primary">Create New User</button>
-            <a href="/admin/dashboard" class="btn btn-primary">back to dashboard</a>
+            <a href="/admin/dashboard" class="btn btn-secondary">Back to Dashboard</a>
         </div>
     </div>
 

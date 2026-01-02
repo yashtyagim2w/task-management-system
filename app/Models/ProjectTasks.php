@@ -497,42 +497,52 @@ class ProjectTasks extends Model
     /**
      * Get tasks for Kanban board (grouped by status)
      * @param int $projectId Project to get tasks for
-     * @param int|null $userId If provided, only show tasks assigned to this user (employee view)
+     * @param mixed $assignee 'unassigned', user_id, or null for all
+     * @param int|null $priorityId Filter by priority
      */
-    public function getForKanban(int $projectId, ?int $userId = null): array
+    public function getForKanban(int $projectId, mixed $assignee = null, ?int $priorityId = null): array
     {
         $WHERE = "WHERE t.is_deleted = 0 AND t.project_id = ?";
         $params = [$projectId];
         $types = "i";
 
-        // For employees, only show their assigned tasks
-        if ($userId !== null) {
+        // Assignee filter
+        if ($assignee === 'unassigned') {
+            $WHERE .= " AND t.assigned_to IS NULL";
+        } elseif ($assignee !== null && is_numeric($assignee)) {
             $WHERE .= " AND t.assigned_to = ?";
-            $params[] = $userId;
+            $params[] = (int)$assignee;
+            $types .= "i";
+        }
+
+        // Priority filter
+        if ($priorityId !== null && $priorityId > 0) {
+            $WHERE .= " AND t.task_priority_id = ?";
+            $params[] = $priorityId;
             $types .= "i";
         }
 
         $sql = "SELECT 
-            t.id,
-            t.project_id,
-            t.name,
-            t.description,
-            t.task_status_id,
-            t.task_priority_id,
-            t.due_date,
-            t.assigned_to,
-            t.created_at,
-            ts.name as status_name,
-            tp.name as priority_name,
-            assigned.first_name as assigned_first_name,
-            assigned.last_name as assigned_last_name,
-            (SELECT COUNT(*) FROM project_task_comments WHERE task_id = t.id) as comment_count
-        FROM {$this->tableName} t
-        JOIN task_statuses ts ON t.task_status_id = ts.id
-        JOIN task_priorities tp ON t.task_priority_id = tp.id
-        LEFT JOIN users assigned ON t.assigned_to = assigned.id
-        {$WHERE}
-        ORDER BY t.task_priority_id DESC, t.due_date ASC, t.created_at DESC";
+        t.id,
+        t.project_id,
+        t.name,
+        t.description,
+        t.task_status_id,
+        t.task_priority_id,
+        t.due_date,
+        t.assigned_to,
+        t.created_at,
+        ts.name as status_name,
+        tp.name as priority_name,
+        assigned.first_name as assigned_first_name,
+        assigned.last_name as assigned_last_name,
+        (SELECT COUNT(*) FROM project_task_comments WHERE task_id = t.id) as comment_count
+    FROM {$this->tableName} t
+    JOIN task_statuses ts ON t.task_status_id = ts.id
+    JOIN task_priorities tp ON t.task_priority_id = tp.id
+    LEFT JOIN users assigned ON t.assigned_to = assigned.id
+    {$WHERE}
+    ORDER BY t.task_priority_id DESC, t.due_date ASC, t.created_at DESC";
 
         $tasks = $this->rawQuery($sql, $types, $params);
 
@@ -553,7 +563,6 @@ class ProjectTasks extends Model
 
         return $grouped;
     }
-
     /**
      * Check if user can access task based on role
      * Admin: any task

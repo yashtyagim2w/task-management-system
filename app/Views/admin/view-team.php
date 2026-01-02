@@ -14,6 +14,15 @@
                 <input type="text" name="search" id="search_input" placeholder="Search managers..." maxlength="128" style="width:250px;">
             </div>
             <div class="filters-selection">
+                <select name="sort_by" id="sort_filter">
+                    <option value="manager_name">Sort by: Manager Name</option>
+                    <option value="team_count">Sort by: Team Size</option>
+                    <option value="project_count">Sort by: Project Count</option>
+                </select>
+                <select name="sort_order" id="sort_order">
+                    <option value="ASC" selected>Ascending</option>
+                    <option value="DESC">Descending</option>
+                </select>
                 <select name="limit" id="limit_filter">
                     <option value="10">Show 10</option>
                     <option value="25">Show 25</option>

@@ -30,6 +30,8 @@ let canDragDrop = false;
 
 // DOM Elements
 const projectSelect = document.getElementById('projectSelect');
+const priorityFilter = document.getElementById('priorityFilter');
+const resetFiltersBtn = document.getElementById('resetFiltersBtn');
 const kanbanContainer = document.getElementById('kanbanContainer');
 const emptyState = document.getElementById('emptyState');
 
@@ -37,6 +39,7 @@ const emptyState = document.getElementById('emptyState');
 document.addEventListener('DOMContentLoaded', () => {
     initChatModule('/api/employee');
     initProjectSelector();
+    initFilters();
     initDragDrop('#kanbanContainer', handleStatusChange);
     initCardClick('#kanbanContainer', openTaskModal);
     initChatForm();
@@ -57,12 +60,34 @@ function initProjectSelector() {
     });
 }
 
+// Filter handlers
+function initFilters() {
+    priorityFilter?.addEventListener('change', () => {
+        if (currentProjectId) loadKanbanBoard();
+    });
+
+    // Reset button
+    resetFiltersBtn?.addEventListener('click', () => {
+        projectSelect.value = '';
+        priorityFilter.value = '';
+        emptyState.classList.remove('d-none');
+        kanbanContainer.classList.add('d-none');
+        currentProjectId = null;
+    });
+}
+
 async function loadKanbanBoard() {
     if (!currentProjectId) return;
     kanbanContainer.innerHTML = '<div class="text-center p-5">Loading...</div>';
 
     try {
-        const res = await fetch(`/api/employee/tasks/kanban?project_id=${currentProjectId}`);
+        // Build query with filters
+        const params = new URLSearchParams({
+            project_id: currentProjectId
+        });
+        if (priorityFilter?.value) params.set('priority_id', priorityFilter.value);
+
+        const res = await fetch(`/api/employee/tasks/kanban?${params}`);
         const result = await res.json();
 
         if (!result.success) {

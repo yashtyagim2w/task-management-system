@@ -21,12 +21,14 @@ class AdminTaskController extends AdminController
     {
         $taskModel = new ProjectTasks();
         $projectModel = new Projects();
+        $usersModel = new Users();
 
         $data = [
             "header_title" => "Tasks - Kanban",
             "statuses" => $taskModel->getStatuses(),
             "priorities" => $taskModel->getPriorities(),
             "projects" => $projectModel->getAllPaginated('', null, null, true, 'p.name ASC', 100, 0)['data'],
+            "managers" => $usersModel->getAllManagers(),
         ];
 
         $this->render("/admin/tasks", $data);
@@ -43,13 +45,15 @@ class AdminTaskController extends AdminController
 
         try {
             $projectId = (int)($_GET['project_id'] ?? 0);
+            $assignee = $_GET['assignee'] ?? null;
+            $priorityId = isset($_GET['priority_id']) ? (int)$_GET['priority_id'] : null;
 
             if ($projectId <= 0) {
                 $this->failure("Please select a project.", [], HTTP_BAD_REQUEST);
             }
 
             $taskModel = new ProjectTasks();
-            $tasks = $taskModel->getForKanban($projectId);
+            $tasks = $taskModel->getForKanban($projectId, $assignee, $priorityId);
             $canDragDrop = $taskModel->isDragDropAllowed($projectId);
 
             $this->success("Tasks fetched.", [

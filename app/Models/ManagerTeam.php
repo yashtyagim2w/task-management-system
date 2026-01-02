@@ -12,19 +12,53 @@ class ManagerTeam extends Model
     /**
      * Get all team members for a manager
      */
-    public function getTeamMembers(int $managerId, string $search = '', int $limit = 10, int $offset = 0): array
-    {
+    public function getTeamMembers(
+        int $managerId,
+        string $search = '',
+        ?int $activeStatus = 1,
+        string $sortBy = 'assigned_at',
+        string $sortOrder = 'DESC',
+        int $limit = 10,
+        int $offset = 0
+    ): array {
         $search = $this->getSanitizedInput($search);
 
         $WHERE = "WHERE mtm.manager_id = ? AND mtm.is_active = 1";
+        $params = [$managerId];
+        $types = "i";
+
+        // Status filter (user's active status, not assignment)
+        if ($activeStatus !== null) {
+            $WHERE .= " AND u.is_active = ?";
+            $params[] = $activeStatus;
+            $types .= "i";
+        }
 
         if ($search !== '') {
             $WHERE .= " AND (
                 u.first_name LIKE '%$search%' OR
                 u.last_name LIKE '%$search%' OR
-                u.email LIKE '%$search%'
+                u.email LIKE '%$search%' OR
+                u.phone_number LIKE '%$search%'
             )";
         }
+
+        // Validate sort_by
+        $validSortBy = ['first_name', 'last_name', 'email', 'assigned_at', 'project_count', 'task_count'];
+        if (!in_array($sortBy, $validSortBy)) {
+            $sortBy = 'assigned_at';
+        }
+        $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+
+        // Map sort field
+        $sortField = match ($sortBy) {
+            'first_name' => 'u.first_name',
+            'last_name' => 'u.last_name',
+            'email' => 'u.email',
+            'project_count' => 'project_count',
+            'task_count' => 'task_count',
+            default => 'mtm.created_at'
+        };
 
         $sql = "SELECT 
             mtm.id as assignment_id,
@@ -34,21 +68,33 @@ class ManagerTeam extends Model
             u.email,
             u.phone_number,
             u.is_active,
-            mtm.created_at as assigned_at
+            mtm.created_at as assigned_at,
+            (SELECT COUNT(DISTINCT pua.project_id) FROM project_user_assignments pua WHERE pua.user_id = u.id) as project_count,
+            (SELECT COUNT(*) FROM project_tasks pt WHERE pt.assigned_to = u.id AND pt.is_deleted = 0) as task_count
         FROM {$this->tableName} mtm
         JOIN users u ON mtm.member_id = u.id
         {$WHERE}
-        ORDER BY mtm.created_at DESC
+        ORDER BY {$sortField} {$sortOrder}
         LIMIT ? OFFSET ?";
 
-        $data = $this->rawQuery($sql, "iii", [$managerId, $limit, $offset]);
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= "ii";
+
+        $data = $this->rawQuery($sql, $types, $params);
 
         // Get total count
+        $countParams = [$managerId];
+        $countTypes = "i";
+        if ($activeStatus !== null) {
+            $countParams[] = $activeStatus;
+            $countTypes .= "i";
+        }
         $countSql = "SELECT COUNT(*) as total 
             FROM {$this->tableName} mtm 
             JOIN users u ON mtm.member_id = u.id
             {$WHERE}";
-        $countResult = $this->rawQuery($countSql, "i", [$managerId]);
+        $countResult = $this->rawQuery($countSql, $countTypes, $countParams);
         $totalCount = (int)($countResult[0]['total'] ?? 0);
 
         return [
@@ -107,7 +153,8 @@ class ManagerTeam extends Model
     }
 
     /**
-     * Get all unassigned employees (not in any team)
+     * Get all employees (with current manager info if assigned)
+     * Returns all active employees - for reassignment support
      */
     public function getUnassignedEmployees(): array
     {
@@ -116,13 +163,15 @@ class ManagerTeam extends Model
             u.first_name,
             u.last_name,
             u.email,
-            u.phone_number
+            u.phone_number,
+            CASE WHEN mtm.id IS NOT NULL THEN 1 ELSE 0 END as is_assigned,
+            m.first_name as current_manager_first_name,
+            m.last_name as current_manager_last_name
         FROM users u
+        LEFT JOIN {$this->tableName} mtm ON u.id = mtm.member_id AND mtm.is_active = 1
+        LEFT JOIN users m ON mtm.manager_id = m.id
         WHERE u.role_id = 3 
         AND u.is_active = 1
-        AND u.id NOT IN (
-            SELECT member_id FROM {$this->tableName} WHERE is_active = 1
-        )
         ORDER BY u.first_name ASC";
 
         return $this->rawQuery($sql);
@@ -131,9 +180,10 @@ class ManagerTeam extends Model
     /**
      * Get all team assignments (for admin view)
      */
-    public function getAllTeamAssignments(string $search = '', int $limit = 10, int $offset = 0): array
+    public function getAllTeamAssignments(string $search = '', int $limit = 10, int $offset = 0, int $managerId = 0, string $sortBy = 'assigned_at', string $sortOrder = 'DESC'): array
     {
         $search = $this->getSanitizedInput($search);
+        $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
 
         $WHERE = "WHERE mtm.is_active = 1";
 
@@ -145,6 +195,18 @@ class ManagerTeam extends Model
                 e.last_name LIKE '%$search%'
             )";
         }
+
+        if ($managerId > 0) {
+            $WHERE .= " AND mtm.manager_id = $managerId";
+        }
+
+        // Determine ORDER BY
+        $orderBy = match ($sortBy) {
+            'manager_name' => "m.first_name {$sortOrder}, m.last_name {$sortOrder}",
+            'employee_name' => "e.first_name {$sortOrder}, e.last_name {$sortOrder}",
+            'assigned_at' => "mtm.created_at {$sortOrder}",
+            default => "mtm.created_at {$sortOrder}"
+        };
 
         $sql = "SELECT 
             mtm.id as assignment_id,
@@ -161,7 +223,7 @@ class ManagerTeam extends Model
         JOIN users m ON mtm.manager_id = m.id
         JOIN users e ON mtm.member_id = e.id
         {$WHERE}
-        ORDER BY mtm.created_at DESC
+        ORDER BY {$orderBy}
         LIMIT ? OFFSET ?";
 
         $data = $this->rawQuery($sql, "ii", [$limit, $offset]);
@@ -208,9 +270,10 @@ class ManagerTeam extends Model
     /**
      * Get all managers with their statistics (project count and team member count)
      */
-    public function getAllManagersWithStats(string $search = '', int $limit = 10, int $offset = 0): array
+    public function getAllManagersWithStats(string $search = '', int $limit = 10, int $offset = 0, string $sortBy = 'manager_name', string $sortOrder = 'ASC'): array
     {
         $search = $this->getSanitizedInput($search);
+        $sortOrder = strtoupper($sortOrder) === 'DESC' ? 'DESC' : 'ASC';
 
         $WHERE = "WHERE u.role_id = 2 AND u.is_active = 1";
 
@@ -221,6 +284,14 @@ class ManagerTeam extends Model
                 u.email LIKE '%$search%'
             )";
         }
+
+        // Determine ORDER BY
+        $orderBy = match ($sortBy) {
+            'manager_name' => "u.first_name {$sortOrder}, u.last_name {$sortOrder}",
+            'team_count' => "team_count {$sortOrder}",
+            'project_count' => "project_count {$sortOrder}",
+            default => "u.first_name {$sortOrder}"
+        };
 
         $sql = "SELECT 
             u.id as manager_id,
@@ -235,7 +306,7 @@ class ManagerTeam extends Model
         LEFT JOIN projects p ON u.id = p.created_by AND p.is_deleted = 0
         {$WHERE}
         GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone_number
-        ORDER BY u.first_name ASC
+        ORDER BY {$orderBy}
         LIMIT ? OFFSET ?";
 
         $data = $this->rawQuery($sql, "ii", [$limit, $offset]);

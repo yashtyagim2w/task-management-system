@@ -31,6 +31,12 @@ function renderManagerRow({
                 <button class="btn btn-primary btn-sm view-team-btn" data-manager="${managerData}">
                     <i class="bi bi-people"></i> View Team
                 </button>
+                <a href="/admin/team-assignments?manager_id=${row.manager_id}" class="btn btn-warning btn-sm ms-1">
+                    <i class="bi bi-person-gear"></i> Manage Team
+                </a>
+                <a href="/admin/projects?manager_id=${row.manager_id}" class="btn btn-info btn-sm ms-1">
+                    <i class="bi bi-folder"></i> View Projects
+                </a>
             </td>
         </tr>
     `;

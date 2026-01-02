@@ -388,9 +388,9 @@ class ManagerProjectController extends ManagerController
             $search = $_GET['search'] ?? '';
             ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
 
-            // Get manager's team members
+            // Get manager's team members (active only, no sorting needed)
             $teamModel = new ManagerTeam();
-            $teamMembers = $teamModel->getTeamMembers($managerId, $search, $limit, $offset);
+            $teamMembers = $teamModel->getTeamMembers($managerId, $search, 1, 'first_name', 'ASC', $limit, $offset);
 
             // Filter out already assigned users
             $assignedUsers = $projectModel->getAssignedUsers($projectId);

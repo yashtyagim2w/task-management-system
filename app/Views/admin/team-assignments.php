@@ -15,6 +15,21 @@
                 <input type="text" name="search" id="search_input" placeholder="Search..." maxlength="128" style="width:250px;">
             </div>
             <div class="filters-selection">
+                <select name="manager_id" id="manager_filter">
+                    <option value="">All Managers</option>
+                    <?php foreach ($managers as $manager) { ?>
+                        <option value="<?= $manager['id'] ?>"><?= htmlspecialchars($manager['first_name'] . ' ' . $manager['last_name']) ?></option>
+                    <?php } ?>
+                </select>
+                <select name="sort_by" id="sort_filter">
+                    <option value="assigned_at">Sort by: Assigned Date</option>
+                    <option value="manager_name">Sort by: Manager Name</option>
+                    <option value="employee_name">Sort by: Employee Name</option>
+                </select>
+                <select name="sort_order" id="sort_order">
+                    <option value="ASC">Ascending</option>
+                    <option value="DESC" selected>Descending</option>
+                </select>
                 <select name="limit" id="limit_filter">
                     <option value="10">Show 10</option>
                     <option value="25">Show 25</option>

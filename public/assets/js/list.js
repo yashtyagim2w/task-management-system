@@ -19,6 +19,17 @@ export default function initializeListPage(config) {
         };
     }
 
+    // Read URL params and populate form fields
+    function applyUrlParamsToForm() {
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.forEach((value, key) => {
+            const field = filtersForm.querySelector(`[name="${key}"]`);
+            if (field) {
+                field.value = value;
+            }
+        });
+    }
+
     async function fetchData() {
         try {
             const params = new URLSearchParams(new FormData(filtersForm));
@@ -26,13 +37,13 @@ export default function initializeListPage(config) {
             params.set("page", currentPage);
 
             const res = await fetch(`${apiEndpoint}?${params}`);
-            
-            if (!res.ok){
-                throw new Error("Network error");
-            } 
 
-            const {success, data} = await res.json();
-            if (!success){
+            if (!res.ok) {
+                throw new Error("Network error");
+            }
+
+            const { success, data } = await res.json();
+            if (!success) {
                 throw new Error("Failed to fetch data");
             };
             renderTable(data.data, data.pagination);
@@ -78,7 +89,7 @@ export default function initializeListPage(config) {
 
             tableBody.innerHTML += renderRow({
                 row,
-                rowNumber,  
+                rowNumber,
                 pagination
             });
         });
@@ -102,9 +113,14 @@ export default function initializeListPage(config) {
     if (resetBtn) {
         resetBtn.addEventListener("click", () => {
             filtersForm.reset();
+            // Clear URL params
+            window.history.replaceState({}, '', window.location.pathname);
             reload();
         });
     }
+
+    // Apply URL params to form before initial fetch
+    applyUrlParamsToForm();
 
     // Initial fetch 
     fetchData();

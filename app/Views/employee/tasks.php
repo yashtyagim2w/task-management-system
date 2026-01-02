@@ -97,11 +97,13 @@
                     </div>
 
                     <div class="tab-pane fade" id="chatTab">
-                        <div id="taskChatContainer" class="chat-container"></div>
-                        <form id="taskChatForm" class="chat-input-container">
-                            <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." required>
-                            <button type="submit" class="btn btn-primary">Send</button>
-                        </form>
+                        <div class="chat-tab">
+                            <div id="taskChatContainer" class="chat-container"></div>
+                            <form id="taskChatForm" class="chat-input-container">
+                                <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." required>
+                                <button type="submit" class="btn btn-primary">Send</button>
+                            </form>
+                        </div>
                     </div>
 
                     <div class="tab-pane fade" id="activityTab">

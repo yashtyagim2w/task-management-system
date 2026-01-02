@@ -13,7 +13,12 @@ $required = [
     'DB_NAME',
     'DB_USER',
     'DB_PASS',
-    'UNIQUE_SESSION_NAME'
+    'UNIQUE_SESSION_NAME',
+    'SMTP_HOST',
+    'SMTP_USERNAME',
+    'SMTP_PASSWORD',
+    'SYSTEM_EMAIL',
+    'SYSTEM_NAME'
 ];
 
 foreach ($required as $key) {

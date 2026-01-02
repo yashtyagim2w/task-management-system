@@ -14,24 +14,39 @@
         <h4 class="stats-category-title">Task Stats</h4>
         <div class="dashboard-stats">
             <div class="stat-card">
-                <div class="stat-value"><?= $taskStats['total_tasks'] ?? 0 ?></div>
-                <div class="stat-label">My Tasks</div>
+                <i class="bi bi-clipboard2-fill stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-value"><?= $taskStats['total_tasks'] ?? 0 ?></div>
+                    <div class="stat-label">My Tasks</div>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value"><?= $taskStats['completed_tasks'] ?? 0 ?></div>
-                <div class="stat-label">Completed</div>
+                <i class="bi bi-clipboard2-check-fill stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-value"><?= $taskStats['completed_tasks'] ?? 0 ?></div>
+                    <div class="stat-label">Completed</div>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value"><?= $taskStats['in_progress_tasks'] ?? 0 ?></div>
-                <div class="stat-label">In Progress</div>
+                <i class="bi bi-arrow-repeat stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-value"><?= $taskStats['in_progress_tasks'] ?? 0 ?></div>
+                    <div class="stat-label">In Progress</div>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value"><?= $taskStats['overdue_tasks'] ?? 0 ?></div>
-                <div class="stat-label">Overdue</div>
+                <i class="bi bi-exclamation-triangle-fill stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-value"><?= $taskStats['overdue_tasks'] ?? 0 ?></div>
+                    <div class="stat-label">Overdue</div>
+                </div>
             </div>
             <div class="stat-card">
-                <div class="stat-value"><?= $taskStats['due_today'] ?? 0 ?></div>
-                <div class="stat-label">Due Today</div>
+                <i class="bi bi-calendar-event-fill stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-value"><?= $taskStats['due_today'] ?? 0 ?></div>
+                    <div class="stat-label">Due Today</div>
+                </div>
             </div>
         </div>
     </div>
@@ -41,8 +56,11 @@
         <h4 class="stats-category-title">Project Stats</h4>
         <div class="dashboard-stats">
             <div class="stat-card">
-                <div class="stat-value"><?= $projectCount ?? 0 ?></div>
-                <div class="stat-label">My Projects</div>
+                <i class="bi bi-folder-fill stat-icon"></i>
+                <div class="stat-content">
+                    <div class="stat-value"><?= $projectCount ?? 0 ?></div>
+                    <div class="stat-label">My Projects</div>
+                </div>
             </div>
         </div>
     </div>

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers\Admin;
 
 use App\Helpers\Logger;
@@ -6,6 +7,7 @@ use App\Helpers\Session;
 use App\Helpers\Validation;
 use App\Models\ManagerTeam;
 use App\Models\Users;
+use App\Services\EmailService;
 use Throwable;
 
 class AdminUserController extends AdminController {
@@ -41,11 +43,11 @@ class AdminUserController extends AdminController {
 
             $roleFilter = isset($_GET['role_id']) && $_GET['role_id'] !== '' ? (int)$_GET['role_id'] : null;
             $activeStatusFilter = isset($_GET['active_status_id']) && $_GET['active_status_id'] !== '' ? (int)$_GET['active_status_id'] : null;
-            
+
             $search = isset($_GET['search']) ? $_GET['search'] : '';
             ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
             $currentUserId = (int)Session::get('userId');
-            
+
             $userModel = new Users();
             $response = $userModel->getAllUserPaginated($search, $sortColumn, $roleFilter, $activeStatusFilter, $currentUserId, $limit, $offset);
             $structuredResponse = $this->paginatedResponse($response['data'], $page, $limit, $response['total_count']);
@@ -115,13 +117,13 @@ class AdminUserController extends AdminController {
                 $message = "Manager cannot be assigned.";
             } else if ($userData['roleId'] == 3 && empty($userData['managerId'])) {
                 $message = "Please select a manager.";
-            } else {    
+            } else {
                 $hashed_password = password_hash($userData['password'], PASSWORD_DEFAULT);
 
                 // check if user already exists
                 $userModel = new Users();
                 $userExist = $userModel->existByEmailOrPhone($userData['email'], $userData['phone']);
-                
+
                 if($userExist){
                     $message = "User with this email or phone number already exists.";
                     $this->failure($message, [], HTTP_BAD_REQUEST);
@@ -135,10 +137,62 @@ class AdminUserController extends AdminController {
                         $managerTeamModel = new ManagerTeam();
                         $managerTeamModel->addMember($userData['managerId'], $newUserId);
                     }
+
+                    // Send welcome email
+                    try {
+                        $emailService = new EmailService();
+                        $roleName = $userData['roleId'] == 2 ? 'Manager' : 'Employee';
+                        $emailService->sendTemplateMail(
+                            $userData['email'],
+                            $userData['firstName'] . ' ' . $userData['lastName'],
+                            'Welcome to Task Management System',
+                            'welcome',
+                            [
+                                'userName' => $userData['firstName'] . ' ' . $userData['lastName'],
+                                'userEmail' => $userData['email'],
+                                'userPassword' => $userData['password'],
+                                'userRole' => $roleName
+                            ]
+                        );
+
+                        // Send manager team welcome if role is Manager
+                        if ($userData['roleId'] == 2) {
+                            $emailService->sendTemplateMail(
+                                $userData['email'],
+                                $userData['firstName'] . ' ' . $userData['lastName'],
+                                'Welcome to the Management Team',
+                                'manager_welcome',
+                                [
+                                    'userName' => $userData['firstName'] . ' ' . $userData['lastName']
+                                ]
+                            );
+                        }
+
+                        // Send team added email if role is Employee
+                        if ($userData['roleId'] == 3 && $userData['managerId']) {
+                            $manager = $userModel->getUserDetailsById($userData['managerId']);
+                            if ($manager) {
+                                $emailService->sendTemplateMail(
+                                    $userData['email'],
+                                    $userData['firstName'] . ' ' . $userData['lastName'],
+                                    'You have been added to a team',
+                                    'team_added',
+                                    [
+                                        'employeeName' => $userData['firstName'] . ' ' . $userData['lastName'],
+                                        'managerName' => $manager[0]['first_name'] . ' ' . $manager[0]['last_name'],
+                                        'managerEmail' => $manager[0]['email']
+                                    ]
+                                );
+                            }
+                        }
+                    } catch (Throwable $emailError) {
+                        Logger::error($emailError);
+                    }
+
                     $message = "User registered successfully!";
                     $this->success($message, [], HTTP_CREATED);
                 }
-                    
+
                 $message = "Failed to create user. Please try again.";
             }
 
@@ -177,7 +231,7 @@ class AdminUserController extends AdminController {
             $managerId = (int) ($input['manager_id'] ?? 0);
 
             $message = "";
-        
+
             // Validation
             if ($userId <= 0) {
                 $message = "Invalid user ID.";
@@ -206,23 +260,23 @@ class AdminUserController extends AdminController {
             } else if($userId === $managerId) {
                 $message = "Manager id and user id cannot be same.";
             }
-            
+
             if ($message !== "") {
                 $this->failure($message, [], HTTP_BAD_REQUEST);
             }
-            
+
             // Get current manager of the employee (if exists)
             $managerTeamModel = new ManagerTeam();
             $currentManagerData = $managerTeamModel->getEmployeeManager($userId);
             $currentManagerId = $currentManagerData['id'] ?? null;
-        
+
             $userModel = new Users();
             $userDetails = $userModel->getUserDetailsById($userId);
-            
+
             if(!$userDetails) {
                 $this->failure("User doesn't exist.", [], HTTP_BAD_REQUEST);
             }
-            
+
             // Only validate manager if role is Employee
             if($roleId == 3) {
                 $managerDetails = $userModel->getUserDetailsById($managerId);
@@ -230,11 +284,11 @@ class AdminUserController extends AdminController {
                     $this->failure("Manager doesn't exist.", [], HTTP_BAD_REQUEST);
                 }
             }
-            
+
             $userDetails = $userDetails[0];
 
             $fieldToUpdate = [];
-            
+
             if ($firstName !== '' && $firstName !== $userDetails['first_name']) {
                 $fieldToUpdate['first_name'] = $firstName;
             }
@@ -257,13 +311,13 @@ class AdminUserController extends AdminController {
             if (in_array($isActive, [0, 1], true) && $isActive !== $userDetails['is_active']) {
                 $fieldToUpdate['is_active'] = $isActive;
             }
-            
+
             // Check if manager needs to be updated
             $managerToUpdate = false;
             if ($roleId == 3 && $managerId !== $currentManagerId) {
                 $managerToUpdate = true;
             }
-            
+
             // If role changed from Employee (3) to Manager (2), remove from team
             $removeFromTeam = false;
             if ($userDetails['role_id'] == 3 && $roleId == 2 && $currentManagerId !== null) {
@@ -286,7 +340,7 @@ class AdminUserController extends AdminController {
             if($managerToUpdate) {
                 $managerTeamModel->adminAssignEmployee($managerId, $userId);
             }
-            
+
             // Remove from team if role changed from Employee to Manager
             if($removeFromTeam) {
                 $managerTeamModel->removeMember($currentManagerId, $userId);

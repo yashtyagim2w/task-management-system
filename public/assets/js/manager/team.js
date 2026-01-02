@@ -1,7 +1,7 @@
 import initializeListPage from "/assets/js/list.js";
 
 // Render function for team members
-function renderTeamRow({row, rowNumber}) {
+function renderTeamRow({ row, rowNumber }) {
     const statusBadge = row.is_active ?
         '<span class="badge bg-success">Active</span>' :
         '<span class="badge bg-danger">Inactive</span>';
@@ -33,14 +33,25 @@ const teamList = initializeListPage({
 });
 
 // Add member form
-document.getElementById('addMemberForm').addEventListener('submit', async function(e) {
+document.getElementById('addMemberForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const form = this;
     const addBtn = document.getElementById('addBtn');
     const formData = new FormData(form);
 
     addBtn.disabled = true;
-    addBtn.innerText = 'Adding...';
+    addBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Adding...';
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Adding Team Member...',
+        text: 'Please wait while we add the employee and send notification',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     try {
         const response = await fetch(form.action, {
@@ -89,7 +100,7 @@ document.getElementById('addMemberForm').addEventListener('submit', async functi
 });
 
 // Remove member
-document.addEventListener('click', async function(e) {
+document.addEventListener('click', async function (e) {
     const btn = e.target.closest('.remove-member-btn');
     if (!btn) return;
 
@@ -105,6 +116,17 @@ document.addEventListener('click', async function(e) {
     });
 
     if (!confirmResult.isConfirmed) return;
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Removing Team Member...',
+        text: 'Please wait while we remove the employee and send notification',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     try {
         const formData = new FormData();

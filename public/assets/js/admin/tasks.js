@@ -244,6 +244,17 @@ function initTaskForms() {
             }
         }
 
+        // Show loading overlay
+        Swal.fire({
+            title: 'Creating Task...',
+            text: 'Please wait while we create the task and send notifications',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
         try {
             const res = await fetch('/admin/task/create', {
                 method: 'POST',
@@ -288,6 +299,17 @@ function initTaskForms() {
             due_date: dueDate || null,
             assigned_to: document.getElementById('edit_assigned_to').value || null
         };
+
+        // Show loading overlay
+        Swal.fire({
+            title: 'Updating Task...',
+            text: 'Please wait while we save changes and send notifications',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
         try {
             const res = await fetch('/api/admin/task', {

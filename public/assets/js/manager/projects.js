@@ -58,7 +58,7 @@ const nameRegex = /^(?=.*[A-Za-z0-9])[A-Za-z0-9 _()\-]{3,128}$/;
 const descRegex = /^[A-Za-z0-9 _.,:;'"!?()\-\n\r]{0,1000}$/;
 
 // Create project
-document.getElementById('createProjectForm').addEventListener('submit', async function(e) {
+document.getElementById('createProjectForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const form = this;
     const saveBtn = document.getElementById('saveBtn');
@@ -134,7 +134,7 @@ document.addEventListener('click', e => {
 });
 
 // Update project
-document.getElementById('editProjectForm').addEventListener('submit', async function(e) {
+document.getElementById('editProjectForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const updateBtn = document.getElementById('updateBtn');
     const projectName = document.getElementById('edit_name').value.trim();
@@ -365,6 +365,19 @@ document.addEventListener('click', async e => {
     if (!btn) return;
 
     btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Assigning to Project...',
+        text: 'Please wait while we assign the employee and send notification',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
     const userId = btn.dataset.userId;
     const formData = new FormData();
     formData.append('project_id', currentProjectId);
@@ -416,6 +429,19 @@ document.addEventListener('click', async e => {
     if (!confirm.isConfirmed) return;
 
     btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Removing from Project...',
+        text: 'Please wait while we remove the employee and send notification',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
     const formData = new FormData();
     formData.append('project_id', currentProjectId);
     formData.append('user_id', btn.dataset.userId);

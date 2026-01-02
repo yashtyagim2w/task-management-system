@@ -8,6 +8,7 @@ use App\Models\ManagerTeam;
 use App\Models\ProjectActivityLog;
 use App\Models\Projects;
 use App\Models\Users;
+use App\Services\EmailService;
 use Throwable;
 
 class AdminProjectController extends AdminController
@@ -530,6 +531,26 @@ class AdminProjectController extends AdminController
                     'employee_name' => $user[0]['first_name'] . ' ' . ($user[0]['last_name'] ?? '')
                 ]);
 
+                // Send project assignment email
+                try {
+                    $manager = $userModel->getUserDetailsById($managerId);
+                    $emailService = new EmailService();
+                    $emailService->sendTemplateMail(
+                        $user[0]['email'],
+                        $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                        'New Project Assignment: ' . $project['name'],
+                        'project_assigned',
+                        [
+                            'employeeName' => $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                            'projectName' => $project['name'],
+                            'managerName' => $manager ? $manager[0]['first_name'] . ' ' . $manager[0]['last_name'] : '',
+                            'projectDescription' => $project['description'] ?? ''
+                        ]
+                    );
+                } catch (Throwable $emailError) {
+                    Logger::error($emailError);
+                }
+
                 $this->success("Employee assigned to project successfully.");
             }
 
@@ -578,6 +599,25 @@ class AdminProjectController extends AdminController
                     'employee_id' => $userId,
                     'employee_name' => !empty($user) ? $user[0]['first_name'] . ' ' . ($user[0]['last_name'] ?? '') : 'Unknown'
                 ]);
+
+                // Send project removed email to employee
+                if (!empty($user)) {
+                    try {
+                        $emailService = new EmailService();
+                        $emailService->sendTemplateMail(
+                            $user[0]['email'],
+                            $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                            'Removed from Project: ' . $project['name'],
+                            'project_removed',
+                            [
+                                'employeeName' => $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                                'projectName' => $project['name']
+                            ]
+                        );
+                    } catch (Throwable $emailError) {
+                        Logger::error($emailError);
+                    }
+                }
 
                 $this->success("Employee removed from project successfully.");
             }

@@ -13,7 +13,7 @@ async function loadManagers(selectElement, excludeUserId = null) {
     try {
         const response = await fetch('/api/admin/managers');
         const result = await response.json();
-        
+
         if (result.success && result.data) {
             selectElement.innerHTML = '<option value="">Select Manager</option>';
             result.data.forEach(manager => {
@@ -30,11 +30,11 @@ async function loadManagers(selectElement, excludeUserId = null) {
 }
 
 // Check if role is employee and toggle manager field - CREATE FORM
-document.getElementById('create_role_id').addEventListener('change', async function() {
+document.getElementById('create_role_id').addEventListener('change', async function () {
     const selectedRole = this.options[this.selectedIndex].text.toLowerCase();
     const managerField = document.getElementById('create_manager_field');
     const managerSelect = document.getElementById('create_manager_id');
-    
+
     if (selectedRole === 'employee') {
         managerField.style.display = 'block';
         managerSelect.setAttribute('required', 'required');
@@ -47,12 +47,12 @@ document.getElementById('create_role_id').addEventListener('change', async funct
 });
 
 // Check if role is employee and toggle manager field - EDIT FORM
-document.getElementById('edit_role_id').addEventListener('change', async function() {
+document.getElementById('edit_role_id').addEventListener('change', async function () {
     const selectedRole = this.options[this.selectedIndex].text.toLowerCase();
     const managerField = document.getElementById('edit_manager_field');
     const managerSelect = document.getElementById('edit_manager_id');
     const currentUserId = parseInt(document.getElementById('edit_user_id').value);
-    
+
     if (selectedRole === 'employee') {
         managerField.style.display = 'block';
         managerSelect.setAttribute('required', 'required');
@@ -72,7 +72,18 @@ document.getElementById('createUserForm').addEventListener('submit', async funct
     const formData = new FormData(form);
 
     saveBtn.disabled = true;
-    saveBtn.innerText = 'Saving...';
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Creating User...',
+        text: 'Please wait while we set up the account and send welcome email',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     try {
         const response = await fetch(form.action, {
@@ -145,7 +156,7 @@ document.addEventListener("click", async e => {
     const selectedRole = edit_role_id.options[edit_role_id.selectedIndex].text.toLowerCase();
     const managerField = document.getElementById('edit_manager_field');
     const managerSelect = document.getElementById('edit_manager_id');
-    
+
     if (selectedRole === 'employee') {
         managerField.style.display = 'block';
         managerSelect.setAttribute('required', 'required');

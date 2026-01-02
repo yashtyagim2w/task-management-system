@@ -80,14 +80,25 @@ async function loadDropdownData() {
 document.getElementById('assignModal').addEventListener('show.bs.modal', loadDropdownData);
 
 // Assign form
-document.getElementById('assignForm').addEventListener('submit', async function(e) {
+document.getElementById('assignForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const form = this;
     const assignBtn = document.getElementById('assignBtn');
     const formData = new FormData(form);
 
     assignBtn.disabled = true;
-    assignBtn.innerText = 'Assigning...';
+    assignBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Assigning...';
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Assigning Employee...',
+        text: 'Please wait while we set up the team assignment and send notification',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     try {
         const response = await fetch(form.action, {
@@ -144,6 +155,17 @@ document.addEventListener('click', async e => {
     });
 
     if (!confirmResult.isConfirmed) return;
+
+    // Show loading overlay
+    Swal.fire({
+        title: 'Removing from Team...',
+        text: 'Please wait while we remove the employee and send notification',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     try {
         const formData = new FormData();

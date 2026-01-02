@@ -6,6 +6,7 @@ use App\Helpers\Logger;
 use App\Helpers\Session;
 use App\Models\ManagerTeam;
 use App\Models\Users;
+use App\Services\EmailService;
 use Throwable;
 
 class ManagerTeamController extends ManagerController
@@ -89,6 +90,25 @@ class ManagerTeamController extends ManagerController
             $success = $teamModel->addMember($managerId, $employeeId);
 
             if ($success) {
+                // Send team added email to employee
+                try {
+                    $managerDetails = $userModel->getUserDetailsById($managerId)[0];
+                    $emailService = new EmailService();
+                    $emailService->sendTemplateMail(
+                        $employee[0]['email'],
+                        $employee[0]['first_name'] . ' ' . $employee[0]['last_name'],
+                        'You have been added to a team',
+                        'team_added',
+                        [
+                            'employeeName' => $employee[0]['first_name'] . ' ' . $employee[0]['last_name'],
+                            'managerName' => $managerDetails['first_name'] . ' ' . $managerDetails['last_name'],
+                            'managerEmail' => $managerDetails['email']
+                        ]
+                    );
+                } catch (Throwable $emailError) {
+                    Logger::error($emailError);
+                }
+
                 $this->success("Employee added to your team successfully.", [], HTTP_CREATED);
             }
 
@@ -123,9 +143,34 @@ class ManagerTeamController extends ManagerController
                 $this->failure("This employee is not in your team.", [], HTTP_BAD_REQUEST);
             }
 
+            // Get employee details before removal
+            $userModel = new Users();
+            $employee = $userModel->getUserDetailsById($employeeId);
+            $manager = $userModel->getUserDetailsById($managerId);
+
             $success = $teamModel->removeMember($managerId, $employeeId);
 
             if ($success) {
+                // Send team removed email to employee
+                if ($employee && $manager) {
+                    try {
+                        $emailService = new EmailService();
+                        $emailService->sendTemplateMail(
+                            $employee[0]['email'],
+                            $employee[0]['first_name'] . ' ' . $employee[0]['last_name'],
+                            'You have been removed from a team',
+                            'team_removed',
+                            [
+                                'employeeName' => $employee[0]['first_name'] . ' ' . $employee[0]['last_name'],
+                                'managerName' => $manager[0]['first_name'] . ' ' . $manager[0]['last_name'],
+                                'managerEmail' => $manager[0]['email']
+                            ]
+                        );
+                    } catch (Throwable $emailError) {
+                        Logger::error($emailError);
+                    }
+                }
+
                 $this->success("Employee removed from your team.");
             }
 

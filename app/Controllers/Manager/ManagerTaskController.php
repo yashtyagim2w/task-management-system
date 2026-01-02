@@ -9,6 +9,8 @@ use App\Models\Projects;
 use App\Models\ProjectTasks;
 use App\Models\TaskComments;
 use App\Models\TaskActivityLog;
+use App\Models\Users;
+use App\Services\EmailService;
 use Throwable;
 
 class ManagerTaskController extends ManagerController
@@ -218,6 +220,35 @@ class ManagerTaskController extends ManagerController
 
                 if ($assignedTo) {
                     $activityLog->logActivity($projectId, $taskId, $managerId, 'assigned', ['assigned_to' => $assignedTo]);
+
+                    // Send task assignment email
+                    try {
+                        $userModel = new Users();
+                        $assignee = $userModel->getUserDetailsById($assignedTo);
+                        $assigner = $userModel->getUserDetailsById($managerId);
+                        $project = $projectModel->getById($projectId, true);
+                        if ($assignee && $assigner && $project) {
+                            $priorities = ['1' => 'low', '2' => 'medium', '3' => 'high'];
+                            $emailService = new EmailService();
+                            $emailService->sendTemplateMail(
+                                $assignee[0]['email'],
+                                $assignee[0]['first_name'] . ' ' . $assignee[0]['last_name'],
+                                'New Task Assigned: ' . $name,
+                                'task_assigned',
+                                [
+                                    'assigneeName' => $assignee[0]['first_name'] . ' ' . $assignee[0]['last_name'],
+                                    'assignerName' => $assigner[0]['first_name'] . ' ' . $assigner[0]['last_name'],
+                                    'taskName' => $name,
+                                    'projectName' => $project['name'],
+                                    'priority' => $priorities[$priorityId] ?? 'medium',
+                                    'dueDate' => $dueDate ? date('M d, Y', strtotime($dueDate)) : '',
+                                    'description' => $description
+                                ]
+                            );
+                        }
+                    } catch (Throwable $emailError) {
+                        Logger::error($emailError);
+                    }
                 }
 
                 $this->success("Task created.", ['task_id' => $taskId], HTTP_CREATED);
@@ -387,6 +418,40 @@ class ManagerTaskController extends ManagerController
             if ($updated) {
                 $activityLog = new TaskActivityLog();
                 $activityLog->logActivity($task['project_id'], $taskId, $managerId, 'updated', $changes);
+
+                // Send email if assignee changed to a new person
+                if (isset($changes['assigned_to']) && $changes['assigned_to']['new'] !== null) {
+                    try {
+                        $userModel = new Users();
+                        $assignee = $userModel->getUserDetailsById($changes['assigned_to']['new']);
+                        $assigner = $userModel->getUserDetailsById($managerId);
+                        $project = $projectModel->getById($task['project_id'], true);
+
+                        if ($assignee && $assigner && $project) {
+                            $priorities = ['1' => 'low', '2' => 'medium', '3' => 'high'];
+                            $priorityId = $fieldsToUpdate['task_priority_id'] ?? $task['task_priority_id'];
+                            $emailService = new EmailService();
+                            $emailService->sendTemplateMail(
+                                $assignee[0]['email'],
+                                $assignee[0]['first_name'] . ' ' . $assignee[0]['last_name'],
+                                'Task Assigned: ' . ($fieldsToUpdate['name'] ?? $task['name']),
+                                'task_assigned',
+                                [
+                                    'assigneeName' => $assignee[0]['first_name'] . ' ' . $assignee[0]['last_name'],
+                                    'assignerName' => $assigner[0]['first_name'] . ' ' . $assigner[0]['last_name'],
+                                    'taskName' => $fieldsToUpdate['name'] ?? $task['name'],
+                                    'projectName' => $project['name'],
+                                    'priority' => $priorities[$priorityId] ?? 'medium',
+                                    'dueDate' => isset($fieldsToUpdate['due_date']) ? ($fieldsToUpdate['due_date'] ? date('M d, Y', strtotime($fieldsToUpdate['due_date'])) : '') : ($task['due_date'] ? date('M d, Y', strtotime($task['due_date'])) : ''),
+                                    'description' => $fieldsToUpdate['description'] ?? $task['description']
+                                ]
+                            );
+                        }
+                    } catch (Throwable $emailError) {
+                        Logger::error($emailError);
+                    }
+                }
+
                 $this->success("Task updated.");
             }
 

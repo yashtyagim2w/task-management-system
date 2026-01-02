@@ -7,6 +7,8 @@ use App\Helpers\Session;
 use App\Models\ManagerTeam;
 use App\Models\ProjectActivityLog;
 use App\Models\Projects;
+use App\Models\Users;
+use App\Services\EmailService;
 use Throwable;
 
 class ManagerProjectController extends ManagerController
@@ -453,6 +455,32 @@ class ManagerProjectController extends ManagerController
                     'employee_id' => $userId
                 ]);
 
+                // Send project assignment email
+                try {
+                    $userModel = new Users();
+                    $user = $userModel->getUserDetailsById($userId);
+                    $manager = $userModel->getUserDetailsById($managerId);
+                    $project = $projectModel->getById($projectId);
+
+                    if ($user && $manager && $project) {
+                        $emailService = new EmailService();
+                        $emailService->sendTemplateMail(
+                            $user[0]['email'],
+                            $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                            'New Project Assignment: ' . $project['name'],
+                            'project_assigned',
+                            [
+                                'employeeName' => $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                                'projectName' => $project['name'],
+                                'managerName' => $manager[0]['first_name'] . ' ' . $manager[0]['last_name'],
+                                'projectDescription' => $project['description'] ?? ''
+                            ]
+                        );
+                    }
+                } catch (Throwable $emailError) {
+                    Logger::error($emailError);
+                }
+
                 $this->success("User assigned to project successfully.");
             }
 
@@ -488,6 +516,11 @@ class ManagerProjectController extends ManagerController
                 $this->failure("You don't have permission to modify this project.", [], HTTP_FORBIDDEN);
             }
 
+            // Get user and project details before removal
+            $userModel = new Users();
+            $user = $userModel->getUserDetailsById($userId);
+            $project = $projectModel->getById($projectId);
+
             $removed = $projectModel->removeUser($projectId, $userId);
 
             if ($removed) {
@@ -496,6 +529,25 @@ class ManagerProjectController extends ManagerController
                 $activityLog->logActivity($projectId, null, $managerId, 'employee_removed', [
                     'employee_id' => $userId
                 ]);
+
+                // Send project removed email to employee
+                if (!empty($user) && !empty($project)) {
+                    try {
+                        $emailService = new EmailService();
+                        $emailService->sendTemplateMail(
+                            $user[0]['email'],
+                            $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                            'Removed from Project: ' . $project['name'],
+                            'project_removed',
+                            [
+                                'employeeName' => $user[0]['first_name'] . ' ' . $user[0]['last_name'],
+                                'projectName' => $project['name']
+                            ]
+                        );
+                    } catch (Throwable $emailError) {
+                        Logger::error($emailError);
+                    }
+                }
 
                 $this->success("User removed from project successfully.");
             }

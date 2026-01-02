@@ -12,7 +12,7 @@
     <div class="filters-container">
         <form id="filtersForm" class="filtersForm">
             <div class="search-bar">
-                <input type="text" name="search" id="search_input" placeholder="Search projects..." style="width:250px;">
+                <input type="text" name="search" id="search_input" placeholder="Search projects..." maxlength="128" style="width:250px;">
             </div>
             <div class="filters-selection">
                 <select name="status_id" id="status_filter">
@@ -76,11 +76,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Project Name *</label>
-                        <input type="text" name="name" class="form-control" maxlength="128" required>
+                        <input type="text" name="name" class="form-control" minlength="3" maxlength="128" pattern="(?=.*[A-Za-z0-9])[A-Za-z0-9 _()\-]{3,128}" title="3-128 chars. Letters, numbers, spaces, -, _, () only." required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="3"></textarea>
+                        <textarea name="description" class="form-control" maxlength="1000" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status *</label>
@@ -113,11 +113,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Project Name *</label>
-                        <input type="text" id="edit_name" class="form-control" maxlength="128" required>
+                        <input type="text" id="edit_name" class="form-control" minlength="3" maxlength="128" pattern="(?=.*[A-Za-z0-9])[A-Za-z0-9 _()\-]{3,128}" title="3-128 chars. Letters, numbers, spaces, -, _, () only." required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea id="edit_description" class="form-control" rows="3"></textarea>
+                        <textarea id="edit_description" class="form-control" maxlength="1000" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status *</label>
@@ -175,7 +175,7 @@
                     <!-- Assigned Employees Tab -->
                     <div class="tab-pane fade show active" id="assigned-pane" role="tabpanel">
                         <div class="filters-container mb-3">
-                            <input type="text" id="assigned_search" class="form-control"
+                            <input type="text" id="assigned_search" class="form-control" maxlength="128"
                                 placeholder="Search assigned employees..." style="max-width:300px;">
                         </div>
                         <div class="table-responsive">
@@ -199,7 +199,7 @@
                     <!-- Available Employees Tab -->
                     <div class="tab-pane fade" id="available-pane" role="tabpanel">
                         <div class="filters-container mb-3">
-                            <input type="text" id="available_search" class="form-control"
+                            <input type="text" id="available_search" class="form-control" maxlength="128"
                                 placeholder="Search available employees..." style="max-width:300px;">
                         </div>
                         <div class="table-responsive">

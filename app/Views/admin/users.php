@@ -17,6 +17,7 @@
                     name="search"
                     id="search_input"
                     placeholder="Search records..."
+                    maxlength="128"
                     style="width:250px;">
             </div>
 

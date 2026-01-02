@@ -100,7 +100,7 @@
                         <div class="chat-tab">
                             <div id="taskChatContainer" class="chat-container"></div>
                             <form id="taskChatForm" class="chat-input-container">
-                                <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." required>
+                                <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." minlength="1" maxlength="500" required>
                                 <button type="submit" class="btn btn-primary">Send</button>
                             </form>
                         </div>

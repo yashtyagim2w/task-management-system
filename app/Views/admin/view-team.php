@@ -11,7 +11,7 @@
     <div class="filters-container">
         <form id="filtersForm" class="filtersForm">
             <div class="search-bar">
-                <input type="text" name="search" id="search_input" placeholder="Search managers..." style="width:250px;">
+                <input type="text" name="search" id="search_input" placeholder="Search managers..." maxlength="128" style="width:250px;">
             </div>
             <div class="filters-selection">
                 <select name="limit" id="limit_filter">

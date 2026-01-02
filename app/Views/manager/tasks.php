@@ -49,7 +49,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="3"></textarea>
+                        <textarea name="description" class="form-control" maxlength="1000" rows="3"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -166,11 +166,11 @@
                             <input type="hidden" id="edit_task_id">
                             <div class="mb-3">
                                 <label class="form-label">Task Name *</label>
-                                <input type="text" id="edit_task_name" class="form-control" minlength="3" maxlength="255" required>
+                                <input type="text" id="edit_task_name" class="form-control" minlength="3" maxlength="255" pattern="(?=.*[A-Za-z0-9])[A-Za-z0-9 _()\-]{3,255}" title="3-255 chars. Letters, numbers, spaces, -, _, () only." required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Description</label>
-                                <textarea id="edit_task_description" class="form-control" rows="3"></textarea>
+                                <textarea id="edit_task_description" class="form-control" maxlength="1000" rows="3"></textarea>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -215,7 +215,7 @@
                         <div class="chat-tab">
                             <div id="taskChatContainer" class="chat-container"></div>
                             <form id="taskChatForm" class="chat-input-container">
-                                <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." required>
+                                <input type="text" id="taskChatInput" class="form-control" placeholder="Type a message..." minlength="1" maxlength="500" required>
                                 <button type="submit" class="btn btn-primary">Send</button>
                             </form>
                         </div>

@@ -15,6 +15,8 @@ function renderTeamRow({ row, rowNumber }) {
             <td>${row.last_name || '-'}</td>
             <td>${row.email}</td>
             <td>${row.phone_number || '-'}</td>
+            <td>${row.project_count || 0}</td>
+            <td>${row.task_count || 0}</td>
             <td>${statusBadge}</td>
             <td>${new Date(row.assigned_at).toLocaleDateString()}</td>
             <td>
@@ -29,7 +31,7 @@ function renderTeamRow({ row, rowNumber }) {
 const teamList = initializeListPage({
     apiEndpoint: "/api/manager/team",
     renderRow: renderTeamRow,
-    columnCount: 8,
+    columnCount: 10,
 });
 
 // Add member form

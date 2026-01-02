@@ -39,10 +39,13 @@ class ManagerTeamController extends ManagerController
         try {
             $managerId = (int)Session::get('userId');
             $search = $_GET['search'] ?? '';
+            $activeStatus = isset($_GET['active_status']) ? (($_GET['active_status'] === '') ? null : (int)$_GET['active_status']) : 1;
+            $sortBy = $_GET['sort_by'] ?? 'assigned_at';
+            $sortOrder = $_GET['sort_order'] ?? 'DESC';
             ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
 
             $teamModel = new ManagerTeam();
-            $response = $teamModel->getTeamMembers($managerId, $search, $limit, $offset);
+            $response = $teamModel->getTeamMembers($managerId, $search, $activeStatus, $sortBy, $sortOrder, $limit, $offset);
             $structuredResponse = $this->paginatedResponse($response['data'], $page, $limit, $response['total_count']);
 
             $this->success("Team members fetched successfully.", $structuredResponse);

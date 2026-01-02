@@ -30,6 +30,8 @@ let canDragDrop = false;
 
 // DOM Elements
 const projectSelect = document.getElementById('projectSelect');
+const assigneeFilter = document.getElementById('assigneeFilter');
+const priorityFilter = document.getElementById('priorityFilter');
 const kanbanContainer = document.getElementById('kanbanContainer');
 const emptyState = document.getElementById('emptyState');
 
@@ -37,6 +39,7 @@ const emptyState = document.getElementById('emptyState');
 document.addEventListener('DOMContentLoaded', () => {
     initChatModule('/api/manager');
     initProjectSelector();
+    initFilters();
     initDragDrop('#kanbanContainer', handleStatusChange);
     initCardClick('#kanbanContainer', openTaskModal);
     initTaskForms();
@@ -56,6 +59,35 @@ function initProjectSelector() {
             kanbanContainer.classList.add('d-none');
         }
     });
+
+    // Check for project_id in URL and auto-select
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectIdFromUrl = urlParams.get('project_id');
+    if (projectIdFromUrl && projectSelect.querySelector(`option[value="${projectIdFromUrl}"]`)) {
+        projectSelect.value = projectIdFromUrl;
+        projectSelect.dispatchEvent(new Event('change'));
+    }
+}
+
+// Filter handlers
+function initFilters() {
+    assigneeFilter?.addEventListener('change', () => {
+        if (currentProjectId) loadKanbanBoard();
+    });
+    priorityFilter?.addEventListener('change', () => {
+        if (currentProjectId) loadKanbanBoard();
+    });
+
+    // Reset button
+    const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    resetFiltersBtn?.addEventListener('click', () => {
+        projectSelect.value = '';
+        assigneeFilter.innerHTML = '<option value="">All Assignees</option><option value="unassigned">Unassigned</option>';
+        priorityFilter.value = '';
+        emptyState.classList.remove('d-none');
+        kanbanContainer.classList.add('d-none');
+        currentProjectId = null;
+    });
 }
 
 async function loadKanbanBoard() {
@@ -63,7 +95,14 @@ async function loadKanbanBoard() {
     kanbanContainer.innerHTML = '<div class="text-center p-5">Loading...</div>';
 
     try {
-        const res = await fetch(`/api/manager/tasks/kanban?project_id=${currentProjectId}`);
+        // Build query with filters
+        const params = new URLSearchParams({
+            project_id: currentProjectId
+        });
+        if (assigneeFilter?.value) params.set('assignee', assigneeFilter.value);
+        if (priorityFilter?.value) params.set('priority_id', priorityFilter.value);
+
+        const res = await fetch(`/api/manager/tasks/kanban?${params}`);
         const result = await res.json();
 
         if (!result.success) {
@@ -121,6 +160,17 @@ async function loadProjectAssignees() {
 
             document.getElementById('create_assigned_to').innerHTML = options;
             document.getElementById('edit_assigned_to').innerHTML = options;
+
+            // Also populate assignee filter (keep current selection)
+            const currentFilterValue = assigneeFilter?.value;
+            if (assigneeFilter) {
+                assigneeFilter.innerHTML = '<option value="">All Assignees</option>' +
+                    '<option value="unassigned">Unassigned</option>' +
+                    result.data.assignees.map(a =>
+                        `<option value="${a.id}">${a.first_name} ${a.last_name || ''}</option>`
+                    ).join('');
+                if (currentFilterValue) assigneeFilter.value = currentFilterValue;
+            }
         }
     } catch (err) {
         console.error('Failed to load assignees');

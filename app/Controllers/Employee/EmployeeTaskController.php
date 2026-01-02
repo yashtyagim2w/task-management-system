@@ -44,6 +44,7 @@ class EmployeeTaskController extends EmployeeController
         try {
             $employeeId = (int)Session::get('userId');
             $projectId = (int)($_GET['project_id'] ?? 0);
+            $priorityId = isset($_GET['priority_id']) ? (int)$_GET['priority_id'] : null;
 
             if ($projectId <= 0) {
                 $this->failure("Please select a project.", [], HTTP_BAD_REQUEST);
@@ -56,8 +57,8 @@ class EmployeeTaskController extends EmployeeController
             }
 
             $taskModel = new ProjectTasks();
-            // Only get tasks assigned to this employee
-            $tasks = $taskModel->getForKanban($projectId, $employeeId);
+            // Only get tasks assigned to this employee (employee ID used as assignee filter)
+            $tasks = $taskModel->getForKanban($projectId, (string)$employeeId, $priorityId);
             $canDragDrop = $taskModel->isDragDropAllowed($projectId);
 
             $this->success("Tasks fetched.", [

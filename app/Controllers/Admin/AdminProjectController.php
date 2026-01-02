@@ -452,7 +452,7 @@ class AdminProjectController extends AdminController
 
             // Get manager's team members (not already assigned to project)
             $teamModel = new ManagerTeam();
-            $teamMembers = $teamModel->getTeamMembers($managerId, $search, $limit, $offset);
+            $teamMembers = $teamModel->getTeamMembers($managerId, $search, 1, 'first_name', 'ASC', $limit, $offset);
 
             // Filter out already assigned users
             $assignedUsers = $projectModel->getAssignedUsers($projectId);

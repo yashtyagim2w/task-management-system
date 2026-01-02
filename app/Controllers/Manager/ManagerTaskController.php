@@ -46,6 +46,8 @@ class ManagerTaskController extends ManagerController
         try {
             $managerId = (int)Session::get('userId');
             $projectId = (int)($_GET['project_id'] ?? 0);
+            $assignee = $_GET['assignee'] ?? null;
+            $priorityId = isset($_GET['priority_id']) ? (int)$_GET['priority_id'] : null;
 
             if ($projectId <= 0) {
                 $this->failure("Please select a project.", [], HTTP_BAD_REQUEST);
@@ -58,7 +60,7 @@ class ManagerTaskController extends ManagerController
             }
 
             $taskModel = new ProjectTasks();
-            $tasks = $taskModel->getForKanban($projectId);
+            $tasks = $taskModel->getForKanban($projectId, $assignee, $priorityId);
             $canDragDrop = $taskModel->isDragDropAllowed($projectId);
 
             $this->success("Tasks fetched.", [

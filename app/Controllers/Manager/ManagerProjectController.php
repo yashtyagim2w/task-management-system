@@ -26,10 +26,10 @@ class ManagerProjectController extends ManagerController
             "statuses" => $projectModel->getStatuses(),
         ];
 
-        // Get team members for assignment
+        // Get team members for assignment (active only)
         $teamModel = new ManagerTeam();
         $managerId = (int)Session::get('userId');
-        $teamMembers = $teamModel->getTeamMembers($managerId, '', 100, 0);
+        $teamMembers = $teamModel->getTeamMembers($managerId, '', 1, 'first_name', 'ASC', 100, 0);
         $data['teamMembers'] = $teamMembers['data'];
 
         $this->render("/manager/projects", $data);
@@ -388,9 +388,9 @@ class ManagerProjectController extends ManagerController
             $search = $_GET['search'] ?? '';
             ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
 
-            // Get manager's team members
+            // Get manager's team members (active only, no sorting needed)
             $teamModel = new ManagerTeam();
-            $teamMembers = $teamModel->getTeamMembers($managerId, $search, $limit, $offset);
+            $teamMembers = $teamModel->getTeamMembers($managerId, $search, 1, 'first_name', 'ASC', $limit, $offset);
 
             // Filter out already assigned users
             $assignedUsers = $projectModel->getAssignedUsers($projectId);

@@ -3,15 +3,24 @@
         <h4 class="nav-heading">My Tasks - Kanban Board</h4>
     </div>
 
-    <!-- Project Selector -->
-    <div class="project-selector">
-        <label class="form-label mb-0 fw-bold">Select Project:</label>
-        <select id="projectSelect" class="form-select">
-            <option value="">-- Select a Project --</option>
-            <?php foreach ($projects as $project): ?>
-                <option value="<?= $project['id'] ?>"><?= htmlspecialchars($project['name']) ?></option>
-            <?php endforeach; ?>
-        </select>
+    <div class="filters-container">
+        <div class="filters-selection">
+            <select id="projectSelect">
+                <option value="">-- Select Project --</option>
+                <?php foreach ($projects as $project): ?>
+                    <option value="<?= $project['id'] ?>"><?= htmlspecialchars($project['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+
+            <select id="priorityFilter">
+                <option value="">All Priorities</option>
+                <?php foreach ($priorities as $priority): ?>
+                    <option value="<?= $priority['id'] ?>"><?= ucfirst($priority['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+
+            <button type="button" id="resetFiltersBtn" class="btn btn-danger">Reset</button>
+        </div>
     </div>
 
     <!-- Empty State -->

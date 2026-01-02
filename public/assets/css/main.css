@@ -111,6 +111,7 @@ input {
 .filters-selection {
     display: flex;
     gap: 0.5rem;
+    justify-content: flex-end;
 }
 
 .filtersForm {
@@ -675,4 +676,20 @@ input {
 table thead {
     background: #2c3e50;
     color: #fff;
+}
+
+/* Clickable stat cards */
+a.stat-card-link {
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+a.stat-card-link:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+a.stat-card-link:hover .stat-icon {
+    transform: scale(1.1);
 }

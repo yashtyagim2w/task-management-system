@@ -38,6 +38,9 @@ function renderProjectRow({
             <td><span class="badge bg-info">${row.task_count || 0}</span></td>
             <td>${new Date(row.created_at).toLocaleDateString()}</td>
             <td>
+                <a href="/admin/tasks?project_id=${row.id}" class="btn btn-primary btn-sm" title="View Tasks">
+                    Tasks
+                </a>
                 <button class="btn btn-warning btn-sm edit-project-btn" data-project="${projectData}" title="Edit">
                     Edit
                 </button>

@@ -53,13 +53,17 @@ async function loadDropdownData() {
         // Populate employees dropdown
         if (employeesData.success && employeesData.data.employees) {
             if (employeesData.data.employees.length === 0) {
-                employeeSelect.innerHTML = '<option value="">No unassigned employees</option>';
+                employeeSelect.innerHTML = '<option value="">No employees available</option>';
             } else {
                 employeeSelect.innerHTML = '<option value="">Select Employee</option>';
                 employeesData.data.employees.forEach(employee => {
                     const option = document.createElement('option');
                     option.value = employee.id;
-                    option.textContent = `${employee.first_name} ${employee.last_name || ''} (${employee.email})`;
+                    let label = `${employee.first_name} ${employee.last_name || ''} (${employee.email})`;
+                    if (employee.is_assigned && employee.current_manager_first_name) {
+                        label += ` [Currently: ${employee.current_manager_first_name} ${employee.current_manager_last_name || ''}]`;
+                    }
+                    option.textContent = label;
                     employeeSelect.appendChild(option);
                 });
             }

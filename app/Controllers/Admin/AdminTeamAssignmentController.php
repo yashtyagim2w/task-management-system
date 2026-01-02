@@ -17,8 +17,12 @@ class AdminTeamAssignmentController extends AdminController
      */
     public function renderTeamAssignmentsPage(): void
     {
+        $usersModel = new Users();
+        $managers = $usersModel->getAllManagers();
+
         $data = [
             "header_title" => "Team Assignments",
+            "managers" => $managers,
         ];
 
         $this->render("/admin/team-assignments", $data);
@@ -35,10 +39,16 @@ class AdminTeamAssignmentController extends AdminController
 
         try {
             $search = $_GET['search'] ?? '';
+            $managerId = (int) ($_GET['manager_id'] ?? 0);
+            $sortBy = $_GET['sort_by'] ?? 'assigned_at';
+            $sortOrder = strtoupper($_GET['sort_order'] ?? 'DESC');
+            if (!in_array($sortOrder, ['ASC', 'DESC'])) {
+                $sortOrder = 'DESC';
+            }
             ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
 
             $teamModel = new ManagerTeam();
-            $response = $teamModel->getAllTeamAssignments($search, $limit, $offset);
+            $response = $teamModel->getAllTeamAssignments($search, $limit, $offset, $managerId, $sortBy, $sortOrder);
             $structuredResponse = $this->paginatedResponse($response['data'], $page, $limit, $response['total_count']);
 
             $this->success("Team assignments fetched successfully.", $structuredResponse);

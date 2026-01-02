@@ -21,11 +21,32 @@
                     style="width:250px;">
             </div>
             <div class="filters-selection">
+                <select name="active_status" id="active_status_filter">
+                    <option value="">All Status</option>
+                    <option value="1" selected>Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+
+                <select name="sort_by" id="sort_by">
+                    <option value="">Sort by</option>
+                    <option value="first_name">First Name</option>
+                    <option value="last_name">Last Name</option>
+                    <option value="assigned_at" selected>Assigned Date</option>
+                    <option value="project_count">Projects</option>
+                    <option value="task_count">Tasks</option>
+                </select>
+
+                <select name="sort_order" id="sort_order">
+                    <option value="ASC">Ascending</option>
+                    <option value="DESC" selected>Descending</option>
+                </select>
+
                 <select name="limit" id="limit_filter">
                     <option value="10">Show 10</option>
                     <option value="25">Show 25</option>
                     <option value="50">Show 50</option>
                 </select>
+
                 <button type="button" class="btn btn-danger" id="resetBtn">Reset</button>
             </div>
         </form>
@@ -40,6 +61,8 @@
                     <th>Last Name</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Projects</th>
+                    <th>Tasks</th>
                     <th>Status</th>
                     <th>Assigned At</th>
                     <th>Actions</th>

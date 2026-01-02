@@ -31,11 +31,16 @@ class AdminTeamViewController extends AdminController
 
         try {
             $search = $_GET['search'] ?? '';
+            $sortBy = $_GET['sort_by'] ?? 'manager_name';
+            $sortOrder = strtoupper($_GET['sort_order'] ?? 'ASC');
+            if (!in_array($sortOrder, ['ASC', 'DESC'])) {
+                $sortOrder = 'ASC';
+            }
 
             ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
 
             $managerTeamModel = new ManagerTeam();
-            $response = $managerTeamModel->getAllManagersWithStats($search, $limit, $offset);
+            $response = $managerTeamModel->getAllManagersWithStats($search, $limit, $offset, $sortBy, $sortOrder);
 
             $structuredResponse = $this->paginatedResponse($response['data'], $page, $limit, $response['total_count']);
 
@@ -134,7 +139,8 @@ class AdminTeamViewController extends AdminController
             ['page' => $page, 'limit' => $limit, 'offset' => $offset] = $this->getPaginationParams();
 
             $managerTeamModel = new ManagerTeam();
-            $response = $managerTeamModel->getTeamMembers($managerId, $search, $limit, $offset);
+            // Pass null for activeStatus to show all, default sort by assigned_at DESC
+            $response = $managerTeamModel->getTeamMembers($managerId, $search, null, 'assigned_at', 'DESC', $limit, $offset);
 
             $structuredResponse = $this->paginatedResponse($response['data'], $page, $limit, $response['total_count']);
 

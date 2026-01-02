@@ -15,34 +15,34 @@
     <div class="stats-category">
         <h4 class="stats-category-title">User Stats</h4>
         <div class="dashboard-stats">
-            <div class="stat-card">
+            <a href="/admin/users" class="stat-card stat-card-link">
                 <i class="bi bi-people-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $userStats['total_users'] ?? 0 ?></div>
                     <div class="stat-label">Total Users</div>
                 </div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="/admin/users?active_status_id=1" class="stat-card stat-card-link">
                 <i class="bi bi-person-check-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $userStats['active_users'] ?? 0 ?></div>
                     <div class="stat-label">Active Users</div>
                 </div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="/admin/users?role_id=2" class="stat-card stat-card-link">
                 <i class="bi bi-person-badge-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $userStats['total_managers'] ?? 0 ?></div>
                     <div class="stat-label">Managers</div>
                 </div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="/admin/users?role_id=3" class="stat-card stat-card-link">
                 <i class="bi bi-person-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $userStats['total_employees'] ?? 0 ?></div>
                     <div class="stat-label">Employees</div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -50,27 +50,27 @@
     <div class="stats-category">
         <h4 class="stats-category-title">Project Stats</h4>
         <div class="dashboard-stats">
-            <div class="stat-card">
+            <a href="/admin/projects" class="stat-card stat-card-link">
                 <i class="bi bi-folder-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $projectStats['total_projects'] ?? 0 ?></div>
                     <div class="stat-label">Total Projects</div>
                 </div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="/admin/projects?status_id=4" class="stat-card stat-card-link">
                 <i class="bi bi-folder-check stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $projectStats['completed_projects'] ?? 0 ?></div>
                     <div class="stat-label">Completed</div>
                 </div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="/admin/projects?status_id=2" class="stat-card stat-card-link">
                 <i class="bi bi-arrow-repeat stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $projectStats['in_progress_projects'] ?? 0 ?></div>
                     <div class="stat-label">In Progress</div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -78,27 +78,27 @@
     <div class="stats-category">
         <h4 class="stats-category-title">Task Stats</h4>
         <div class="dashboard-stats">
-            <div class="stat-card">
+            <a href="/admin/tasks" class="stat-card stat-card-link">
                 <i class="bi bi-clipboard2-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $taskStats['total_tasks'] ?? 0 ?></div>
                     <div class="stat-label">Total Tasks</div>
                 </div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="/admin/tasks" class="stat-card stat-card-link">
                 <i class="bi bi-clipboard2-check-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $taskStats['completed_tasks'] ?? 0 ?></div>
                     <div class="stat-label">Completed</div>
                 </div>
-            </div>
-            <div class="stat-card">
+            </a>
+            <a href="/admin/tasks" class="stat-card stat-card-link">
                 <i class="bi bi-exclamation-triangle-fill stat-icon"></i>
                 <div class="stat-content">
                     <div class="stat-value"><?= $taskStats['overdue_tasks'] ?? 0 ?></div>
                     <div class="stat-label">Overdue</div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 

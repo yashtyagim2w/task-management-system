@@ -12,13 +12,12 @@
     <div class="filters-container">
         <form id="filtersForm" class="filtersForm">
             <div class="search-bar">
-                <input 
-                    type="text" 
-                    name="search" 
+                <input
+                    type="text"
+                    name="search"
                     id="search_input"
                     placeholder="Search records..."
-                    style="width:250px;"
-                >
+                    style="width:250px;">
             </div>
 
             <div class="filters-selection">
@@ -80,7 +79,7 @@
                 </tr>
             </thead>
             <tbody id="main-table">
-        
+
             </tbody>
         </table>
     </div>
@@ -107,27 +106,25 @@
                             type="text"
                             name="first_name"
                             class="form-control"
-                            minlength="2" 
-                            maxlength="128" 
-                            pattern="[A-Za-z]+" 
+                            minlength="2"
+                            maxlength="128"
+                            pattern="[A-Za-z]+"
                             title="Only alphabets allowed"
-                            required
-                        >
+                            required>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Last Name</label>
                         <input
                             type="text"
                             name="last_name"
                             class="form-control"
-                            minlength="1" 
-                            maxlength="128" 
-                            pattern="[A-Za-z]+" 
-                            title="Only alphabets allowed"
-                        >
+                            minlength="1"
+                            maxlength="128"
+                            pattern="[A-Za-z]+"
+                            title="Only alphabets allowed">
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Email *</label>
                         <input
@@ -135,8 +132,7 @@
                             name="email"
                             class="form-control"
                             maxlength="128"
-                            required
-                        >
+                            required>
                     </div>
 
                     <div class="mb-3">
@@ -145,31 +141,36 @@
                             type="text"
                             name="phone"
                             class="form-control"
-                            pattern="\d{10}" 
-                            title="Only numbers are allowed." 
+                            pattern="\d{10}"
+                            title="Only numbers are allowed."
                             minlength="10"
                             maxlength="10"
-                            required
-                        >
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                            required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Password *</label>
-                        <input
-                            type="password"
-                            name="password"
-                            class="form-control"
-                            minlength="6" 
-                            maxlength="32"
-                            required
-                        >
+                        <div class="input-group">
+                            <input
+                                type="password"
+                                name="password"
+                                id="create_password"
+                                class="form-control"
+                                minlength="6"
+                                maxlength="32"
+                                required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('create_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Role *</label>
                         <select name="role_id" id="create_role_id" class="form-select" required>
                             <option value="" disabled selected>Select Role</option>
-                            <?php foreach($roles as $role) { ?>
+                            <?php foreach ($roles as $role) { ?>
                                 <option value="<?= $role['id'] ?>"><?= $role['name'] ?></option>
                             <?php } ?>
                         </select>
@@ -189,8 +190,7 @@
                     <button
                         type="button"
                         class="btn btn-secondary"
-                        data-bs-dismiss="modal"
-                    >
+                        data-bs-dismiss="modal">
                         Cancel
                     </button>
                     <button type="submit" class="btn btn-primary" id="saveBtn">
@@ -220,65 +220,66 @@
 
                     <div class="mb-3">
                         <label class="form-label">First Name *</label>
-                        <input 
-                            type="text" 
-                            id="edit_first_name" 
-                            class="form-control" 
-                            minlength="2" 
-                            maxlength="128" 
-                            pattern="[A-Za-z]+" 
+                        <input
+                            type="text"
+                            id="edit_first_name"
+                            class="form-control"
+                            minlength="2"
+                            maxlength="128"
+                            pattern="[A-Za-z]+"
                             title="Only alphabets allowed"
-                            required
-                        >
+                            required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Last Name</label>
-                        <input 
-                            type="text" 
-                            id="edit_last_name" 
+                        <input
+                            type="text"
+                            id="edit_last_name"
                             class="form-control"
-                            minlength="2" 
-                            maxlength="128" 
-                            pattern="[A-Za-z]+" 
-                            title="Only alphabets allowed"
-                        >
+                            minlength="2"
+                            maxlength="128"
+                            pattern="[A-Za-z]+"
+                            title="Only alphabets allowed">
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Email *</label>
-                        <input 
-                            type="email" 
-                            id="edit_email" 
-                            class="form-control" 
+                        <input
+                            type="email"
+                            id="edit_email"
+                            class="form-control"
                             maxlength="128"
-                            required
-                        >
+                            required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Phone *</label>
-                        <input 
-                            type="text" 
-                            id="edit_phone" 
-                            class="form-control" 
-                            pattern="\d{10}" 
-                            title="Only numbers are allowed." 
+                        <input
+                            type="text"
+                            id="edit_phone"
+                            class="form-control"
+                            pattern="\d{10}"
+                            title="Only numbers are allowed."
                             minlength="10"
                             maxlength="10"
-                            required
-                        >
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                            required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Password</label>
-                        <input 
-                            type="text" 
-                            id="edit_password" 
-                            class="form-control"  
-                            minlength="6"
-                            maxlength="32"
-                        >
+                        <div class="input-group">
+                            <input
+                                type="password"
+                                id="edit_password"
+                                class="form-control"
+                                minlength="6"
+                                maxlength="32">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('edit_password', this)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -314,19 +315,17 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button 
-                        type="button" 
+                    <button
+                        type="button"
                         class="btn btn-secondary"
-                        data-bs-dismiss="modal"
-                    >   
+                        data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    
-                    <button 
-                        type="submit" 
-                        class="btn btn-primary" 
-                        id="updateBtn"
-                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        id="updateBtn">
                         Update
                     </button>
                 </div>
@@ -336,4 +335,5 @@
     </div>
 </div>
 
+<script src="/assets/js/utils.js"></script>
 <script type="module" src="/assets/js/admin/users.js"></script>

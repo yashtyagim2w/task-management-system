@@ -8,29 +8,33 @@
 
                 <div>
                     <label for="email">Email</label>
-                    <input 
-                        type="email" 
-                        name="email" 
-                        placeholder="example@gmail.com" 
-                        minlength="5" 
-                        maxlength="128" 
-                        class="form-control" 
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="example@gmail.com"
+                        minlength="5"
+                        maxlength="128"
+                        class="form-control"
                         required
-                        focused
-                    >
+                        focused>
                 </div>
-                
+
                 <div>
                     <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        name="password" 
-                        placeholder="password"
-                        minlength="6" 
-                        maxlength="32" 
-                        class="form-control" 
-                        required
-                    >
+                    <div class="input-group">
+                        <input
+                            type="password"
+                            name="password"
+                            id="login_password"
+                            placeholder="password"
+                            minlength="6"
+                            maxlength="32"
+                            class="form-control"
+                            required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('login_password', this)">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 fw-500"> Login </button>
@@ -40,9 +44,10 @@
     </div>
 </main>
 
+<script src="/assets/js/utils.js"></script>
 <script>
     const flashMsessage = <?= json_encode($flash_message ?? null) ?>;
-    
+
     // show flash message if exists
     if(flashMsessage && flashMsessage.message) {
         Swal.fire({

@@ -277,6 +277,12 @@ class AdminUserController extends AdminController {
                 $this->failure("User doesn't exist.", [], HTTP_BAD_REQUEST);
             }
 
+            // Check if email or phone already exists for other users
+            $existsForOther = $userModel->existByEmailOrPhoneExcluding($email, $phone, $userId);
+            if ($existsForOther) {
+                $this->failure("Email or phone number already exists for another user.", [], HTTP_BAD_REQUEST);
+            }
+
             // Only validate manager if role is Employee
             if($roleId == 3) {
                 $managerDetails = $userModel->getUserDetailsById($managerId);

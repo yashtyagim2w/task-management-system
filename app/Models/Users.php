@@ -63,6 +63,14 @@ class Users extends Model
         return count($result) > 0;
     }
 
+    public function existByEmailOrPhoneExcluding(string $email, string $phone, int $excludeUserId): bool
+    {
+        $sql = "SELECT id FROM {$this->tableName} WHERE (email = ? OR phone_number = ?) AND id != ? LIMIT 1;";
+        $result = $this->rawQuery($sql, "ssi", [$email, $phone, $excludeUserId]);
+
+        return count($result) > 0;
+    }
+
     public function create(string $firstName, string $lastName, string $email, string $phone, string $hashedPassword, int $roleId, int $createdBy): int
     {
         $sql = "INSERT INTO {$this->tableName} (first_name, last_name, email, phone_number, password, role_id, is_active, created_by) 
